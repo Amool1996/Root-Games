@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Amazing Roots Games</title>
+<style>
+  :root{
+    --sky:#aee3ff; --soil:#8a5a33; --soil-dark:#6e4526;
+    --cream:#fff8ec; --ink:#3b2a1a;
+    --green:#5cb85c; --blue:#3b9ae0; --orange:#f5a623; --tan:#d9a05b;
+    --btn:#ff8c42; --btn-dark:#e0722a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none;}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--sky);color:var(--ink);}
+  .screen{position:absolute;inset:0;display:none;}
+  .screen.active{display:flex;}
+
+  /* ---------- shared UI ---------- */
+  .topbar{position:absolute;top:10px;left:10px;right:10px;display:flex;gap:10px;z-index:30;pointer-events:none;}
+  .topbar button{pointer-events:auto;}
+  .iconbtn{
+    font-size:26px;line-height:1;background:var(--cream);border:3px solid var(--ink);
+    border-radius:14px;padding:8px 14px;cursor:pointer;box-shadow:0 3px 0 var(--ink);
+  }
+  .iconbtn:active{transform:translateY(3px);box-shadow:none;}
+  .spacer{flex:1;}
+  .bigbtn{
+    font-size:clamp(20px,3.5vmin,30px);font-weight:800;color:#fff;background:var(--btn);
+    border:4px solid var(--btn-dark);border-radius:20px;padding:16px 34px;cursor:pointer;
+    box-shadow:0 6px 0 var(--btn-dark);letter-spacing:.5px;
+  }
+  .bigbtn:active{transform:translateY(6px);box-shadow:none;}
+  .bigbtn.green{background:#5cb85c;border-color:#3f8f3f;box-shadow:0 6px 0 #3f8f3f;}
+  .bigbtn.green:active{box-shadow:none;}
+  .bigbtn.blue{background:#3b9ae0;border-color:#2a6fa3;box-shadow:0 6px 0 #2a6fa3;}
+  .bigbtn.blue:active{box-shadow:none;}
+
+  /* ---------- menu ---------- */
+  #menu{flex-direction:column;align-items:center;justify-content:center;gap:3vmin;
+    background:linear-gradient(#aee3ff 0 55%, #8fce5f 55% 62%, #8a5a33 62% 100%);}
+  #menu h1{font-size:clamp(38px,8vmin,84px);margin:0;color:#2c5f14;text-shadow:3px 3px 0 #fff;}
+  #menu p.sub{font-size:clamp(16px,2.6vmin,26px);margin:0 0 2vmin;background:var(--cream);
+    padding:8px 22px;border-radius:999px;border:3px solid var(--ink);}
+  .menu-cards{display:flex;gap:4vmin;flex-wrap:wrap;justify-content:center;}
+  .card{
+    width:min(340px,30vw);background:var(--cream);border:5px solid var(--ink);border-radius:24px;
+    padding:22px;text-align:center;cursor:pointer;box-shadow:0 8px 0 rgba(0,0,0,.35);
+    transition:transform .1s;
+  }
+  .card:hover{transform:scale(1.03);}
+  .card:active{transform:translateY(6px);box-shadow:none;}
+  .card .emoji{font-size:clamp(48px,9vmin,90px);}
+  .card h2{margin:8px 0 6px;font-size:clamp(20px,3.4vmin,32px);}
+  .card p{margin:0;font-size:clamp(14px,2.2vmin,19px);}
+
+  /* ---------- game 1 (root maze) ---------- */
+  #game1{background:var(--soil);}
+  #g1canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;}
+  .hud{
+    position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:20;
+    font-weight:800;font-size:clamp(16px,2.6vmin,24px);
+  }
+  .hud .pill{background:var(--cream);border:3px solid var(--ink);border-radius:999px;padding:6px 16px;white-space:nowrap;}
+  .steer{
+    position:absolute;bottom:18px;z-index:20;font-size:44px;width:min(19vw,120px);height:min(19vw,120px);
+    border-radius:50%;border:4px solid var(--ink);background:rgba(255,248,236,.85);cursor:pointer;
+  }
+  #leftBtn{left:18px;} #rightBtn{right:18px;}
+  .steer:active{background:#ffd98a;}
+  #g1overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2.4vmin;z-index:25;background:rgba(40,24,10,.55);text-align:center;padding:20px;
+  }
+  #g1overlay .panel{
+    background:var(--cream);border:5px solid var(--ink);border-radius:26px;padding:3vmin 5vmin;
+    max-width:min(640px,92vw);box-shadow:0 10px 0 rgba(0,0,0,.4);
+  }
+  #g1overlay h2{margin:0 0 1vmin;font-size:clamp(26px,5vmin,46px);}
+  #g1overlay p{font-size:clamp(16px,2.6vmin,24px);margin:.6vmin 0;}
+  #g1toast{
+    position:absolute;top:16%;left:50%;transform:translateX(-50%);z-index:22;
+    background:#fff8ec;border:3px solid var(--ink);border-radius:999px;padding:8px 22px;
+    font-weight:800;font-size:clamp(16px,2.8vmin,26px);opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+
+  /* ---------- game 2 (label game) ---------- */
+  #game2{flex-direction:column;align-items:center;background:linear-gradient(#fdf3df,#f6e2b8);}
+  #game2 .title2{margin-top:64px;font-size:clamp(20px,3.6vmin,34px);font-weight:800;text-align:center;padding:0 12px;}
+  #game2 .hint2{font-size:clamp(14px,2.2vmin,20px);margin:4px 0 0;text-align:center;}
+  #svgwrap{flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0;padding:6px;}
+  #rootsvg{height:100%;max-height:100%;max-width:96vw;touch-action:none;}
+  #tray{
+    display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:10px 8px 22px;z-index:5;
+  }
+  .chip{
+    font-size:clamp(16px,2.6vmin,24px);font-weight:800;padding:12px 20px;border-radius:999px;
+    border:4px solid var(--ink);cursor:grab;touch-action:none;box-shadow:0 4px 0 rgba(0,0,0,.35);
+    color:#fff;text-shadow:1px 1px 0 rgba(0,0,0,.35);position:relative;
+  }
+  .chip.dragging{position:fixed;z-index:100;cursor:grabbing;pointer-events:none;transform:translate(-50%,-50%) scale(1.1);}
+  .chip.done{visibility:hidden;pointer-events:none;}
+  .chip.shake{animation:shake .4s;}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+  .zone-glow{filter:drop-shadow(0 0 10px #fff);}
+  #g2overlay{
+    position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    z-index:40;background:rgba(60,40,10,.5);text-align:center;gap:2.4vmin;padding:20px;
+  }
+  #g2overlay .panel{background:var(--cream);border:5px solid var(--ink);border-radius:26px;
+    padding:3vmin 5vmin;box-shadow:0 10px 0 rgba(0,0,0,.4);max-width:min(620px,92vw);}
+  #g2overlay h2{margin:0 0 1vmin;font-size:clamp(26px,5vmin,46px);}
+  #g2overlay p{font-size:clamp(16px,2.6vmin,24px);margin:.6vmin 0;}
+  #confetti{position:absolute;inset:0;pointer-events:none;z-index:50;}
+
+  /* ---------- game 3 (Farm Boss) ---------- */
+  #game3{flex-direction:column;align-items:center;background:linear-gradient(#bfe7ff 0 30%, #d7f0c8 30% 100%);overflow-y:auto;}
+  .g3head{
+    margin-top:64px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center;z-index:5;
+    font-weight:800;font-size:clamp(17px,2.8vmin,26px);
+  }
+  .g3head .pill{background:var(--cream);border:3px solid var(--ink);border-radius:999px;padding:6px 18px;}
+  #g3field{
+    margin:10px auto 0;background:linear-gradient(#a06b3d,#7c4f28);border:5px solid var(--ink);border-radius:18px;
+    padding:10px 16px;font-size:clamp(20px,3.6vmin,34px);line-height:1.35;letter-spacing:6px;text-align:center;
+    min-height:1.2em;box-shadow:0 5px 0 rgba(0,0,0,.3);
+  }
+  #g3stage{
+    flex:1;width:100%;max-width:1000px;display:flex;flex-direction:column;align-items:center;
+    justify-content:flex-start;gap:1.6vmin;padding:14px 12px 26px;
+  }
+  #g3stage h2{margin:.4vmin 0 0;font-size:clamp(22px,4.2vmin,40px);text-align:center;}
+  #g3stage .story{font-size:clamp(16px,2.6vmin,24px);text-align:center;margin:0;max-width:820px;}
+  .g3grid{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%;}
+  .g3choice{
+    width:min(215px,44vw);background:var(--cream);border:4px solid var(--ink);border-radius:20px;
+    padding:12px 10px;text-align:center;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.3);position:relative;
+  }
+  .g3choice:hover{transform:scale(1.03);}
+  .g3choice:active{transform:translateY(4px);box-shadow:none;}
+  .g3choice .emoji{font-size:clamp(34px,6vmin,54px);}
+  .g3choice h3{margin:4px 0 2px;font-size:clamp(16px,2.6vmin,22px);}
+  .g3choice p{margin:0;font-size:clamp(13px,2vmin,17px);min-height:2.4em;}
+  .g3choice .price{
+    display:inline-block;margin-top:6px;background:#ffd93b;border:3px solid var(--ink);border-radius:999px;
+    padding:3px 14px;font-weight:800;font-size:clamp(15px,2.4vmin,20px);
+  }
+  .g3choice.free .price{background:#b8f2b8;}
+  .g3choice.locked{opacity:.45;cursor:not-allowed;filter:grayscale(.6);}
+  .g3choice.picked{outline:6px solid #5cb85c;}
+  #g3feedback{
+    min-height:2.2em;font-size:clamp(16px,2.7vmin,24px);font-weight:700;text-align:center;
+    background:var(--cream);border:3px solid var(--ink);border-radius:16px;padding:8px 18px;
+    max-width:820px;visibility:hidden;
+  }
+  .weathercard{
+    background:var(--cream);border:6px solid var(--ink);border-radius:26px;padding:2.4vmin 5vmin;text-align:center;
+    box-shadow:0 8px 0 rgba(0,0,0,.35);animation:pop .5s;
+  }
+  @keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+  .weathercard .wemoji{font-size:clamp(54px,10vmin,100px);}
+  .weathercard h2{margin:.4vmin 0;}
+  .receipt{
+    background:#fffef7;border:4px solid var(--ink);border-radius:18px;padding:14px 26px;
+    font-size:clamp(17px,2.9vmin,26px);font-weight:700;min-width:min(420px,88vw);
+  }
+  .receipt .row{display:flex;justify-content:space-between;gap:30px;padding:3px 0;}
+  .receipt .total{border-top:3px dashed var(--ink);margin-top:6px;padding-top:8px;font-size:1.15em;}
+  .profit-pos{color:#1d7a1d;} .profit-neg{color:#c0392b;}
+  .kb{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:640px;}
+  .kb button{
+    font-size:clamp(18px,3vmin,26px);font-weight:800;width:clamp(42px,7vmin,58px);height:clamp(42px,7vmin,58px);
+    border:3px solid var(--ink);border-radius:12px;background:var(--cream);cursor:pointer;box-shadow:0 3px 0 var(--ink);
+  }
+  .kb button:active{transform:translateY(3px);box-shadow:none;}
+  #g3name{font-size:clamp(34px,6vmin,54px);font-weight:800;letter-spacing:14px;background:var(--cream);
+    border:4px solid var(--ink);border-radius:16px;padding:6px 24px;min-width:200px;text-align:center;}
+  .lb{background:var(--cream);border:4px solid var(--ink);border-radius:18px;padding:12px 30px;
+    font-size:clamp(16px,2.7vmin,24px);font-weight:700;min-width:min(400px,86vw);}
+  .lb .row{display:flex;justify-content:space-between;gap:26px;padding:2px 0;}
+  .lb .me{background:#fff3b8;border-radius:8px;padding:2px 8px;margin:0 -8px;}
+</style>
+</head>
+<body>
+
+<!-- ============ MENU ============ -->
+<div id="menu" class="screen active">
+  <h1>🌽 Amazing Roots! 🌱</h1>
+  <p class="sub">Root science games &mdash; Division of Plant Science &amp; Technology</p>
+  <div class="menu-cards">
+    <div class="card" id="playG1">
+      <div class="emoji">🪱⬇️💧</div>
+      <h2>Grow Your Root!</h2>
+      <p>Steer a growing root through the soil. Dodge rocks, drink water, grab nutrients!</p>
+    </div>
+    <div class="card" id="playG2">
+      <div class="emoji">🔬🧩</div>
+      <h2>Label the Root!</h2>
+      <p>Look inside a real root! Drag each label to the right part.</p>
+    </div>
+    <div class="card" id="playG3">
+      <div class="emoji">🧑‍🌾💰🌽</div>
+      <h2>Farm Boss!</h2>
+      <p>Run a real farm! Spend $100 wisely from seed to harvest. Can you make a profit?</p>
+    </div>
+  </div>
+  <button class="iconbtn" id="muteBtn" style="position:absolute;top:12px;right:12px;">🔊</button>
+</div>
+
+<!-- ============ GAME 1 ============ -->
+<div id="game1" class="screen">
+  <canvas id="g1canvas"></canvas>
+  <div class="topbar">
+    <button class="iconbtn g1home">🏠</button>
+    <div class="spacer"></div>
+    <button class="iconbtn mute2">🔊</button>
+  </div>
+  <div class="hud">
+    <div class="pill">⏱️ <span id="g1time">60</span></div>
+    <div class="pill">💧 <span id="g1water">0</span></div>
+    <div class="pill">🧪 <span id="g1nutri">0</span></div>
+    <div class="pill">📏 <span id="g1depth">0</span> cm</div>
+  </div>
+  <div id="g1toast"></div>
+  <button class="steer" id="leftBtn">⬅️</button>
+  <button class="steer" id="rightBtn">➡️</button>
+  <div id="g1overlay">
+    <div class="panel">
+      <h2 id="g1oTitle">Grow Your Root!</h2>
+      <p id="g1oText">Roots hunt for water and food underground.<br>Steer with ⬅️ ➡️ buttons or arrow keys.<br>Dodge rocks 🪨 &mdash; collect 💧 and N&nbsp;P&nbsp;K!</p>
+      <p id="g1oFact" style="display:none;font-style:italic;"></p>
+    </div>
+    <button class="bigbtn green" id="g1start">GROW! 🌱</button>
+  </div>
+</div>
+
+<!-- ============ GAME 2 ============ -->
+<div id="game2" class="screen">
+  <div class="topbar">
+    <button class="iconbtn g1home">🏠</button>
+    <div class="spacer"></div>
+    <button class="iconbtn mute2">🔊</button>
+  </div>
+  <div class="title2">🔬 Look inside a root! Drag each label to the right part.</div>
+  <div class="hint2">Tip: the colors can help you! 😉</div>
+  <div id="svgwrap"></div>
+  <div id="tray"></div>
+  <div id="g2overlay">
+    <div class="panel">
+      <h2>🎉 You did it, Root Scientist! 🎉</h2>
+      <p>Roots have <b>skin</b> to protect them, a <b>sponge</b> to store food,<br>
+         <b>water pipes</b> (xylem) that pull water UP,<br>
+         and <b>food pipes</b> (phloem) that carry sugar DOWN. 🌽</p>
+    </div>
+    <button class="bigbtn green" id="g2again">Play Again 🔁</button>
+    <button class="bigbtn blue" id="g2menu">Menu 🏠</button>
+  </div>
+  <canvas id="confetti"></canvas>
+</div>
+
+<!-- ============ GAME 3 : FARM BOSS ============ -->
+<div id="game3" class="screen">
+  <div class="topbar">
+    <button class="iconbtn g1home">🏠</button>
+    <div class="spacer"></div>
+    <button class="iconbtn mute2">🔊</button>
+  </div>
+  <div class="g3head">
+    <div class="pill">💰 $<span id="g3cash">100</span> left</div>
+    <div class="pill" id="g3season">🗓️ Spring</div>
+  </div>
+  <div id="g3field"></div>
+  <div id="g3stage"></div>
+</div>
+
+<script>
+"use strict";
+/* ================= shared: screens, sound, mute ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+let muted = false;
+try { muted = localStorage.getItem("rootsMuted") === "1"; } catch(e){}
+
+function show(id){
+  $$(".screen").forEach(el=>el.classList.remove("active"));
+  $(id).classList.add("active");
+  cancelIdle();
+}
+function syncMuteBtns(){
+  const t = muted ? "🔇" : "🔊";
+  $("#muteBtn").textContent = t;
+  $$(".mute2").forEach(b=>b.textContent=t);
+}
+function toggleMute(){
+  muted = !muted;
+  try { localStorage.setItem("rootsMuted", muted ? "1" : "0"); } catch(e){}
+  syncMuteBtns();
+}
+$("#muteBtn").addEventListener("click", toggleMute);
+$$(".mute2").forEach(b=>b.addEventListener("click", toggleMute));
+syncMuteBtns();
+
+/* Web Audio bleeps (no files needed = fully offline) */
+let AC = null;
+function audio(){ if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } if(AC&&AC.state==="suspended") AC.resume(); return AC; }
+function tone(freq, dur, type, vol, when){
+  const ac = audio(); if(!ac || muted) return;
+  const t0 = ac.currentTime + (when||0);
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type||"sine"; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol||0.15, t0);
+  g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  o.connect(g).connect(ac.destination);
+  o.start(t0); o.stop(t0+dur+0.05);
+}
+const sfx = {
+  pick(){ tone(880,.12,"triangle",.18); tone(1320,.15,"triangle",.14,.06); },
+  water(){ tone(520,.1,"sine",.18); tone(780,.14,"sine",.16,.07); },
+  bonk(){ tone(120,.2,"square",.2); },
+  ding(){ tone(660,.12,"triangle",.2); tone(990,.2,"triangle",.18,.09); },
+  buzz(){ tone(160,.25,"sawtooth",.12); },
+  fanfare(){ [523,659,784,1047].forEach((f,i)=>tone(f,.25,"triangle",.18,i*0.13)); }
+};
+
+/* idle auto-return to menu from end screens */
+let idleTimer = null;
+function armIdle(){ cancelIdle(); idleTimer = setTimeout(()=>{ show("#menu"); g1stop(); }, 30000); }
+function cancelIdle(){ if(idleTimer){ clearTimeout(idleTimer); idleTimer=null; } }
+
+$$(".g1home").forEach(b=>b.addEventListener("click", ()=>{ g1stop(); show("#menu"); }));
+$("#playG1").addEventListener("click", ()=>{ audio(); show("#game1"); g1ready(); });
+$("#playG2").addEventListener("click", ()=>{ audio(); show("#game2"); g2reset(); });
+
+/* ============================================================
+   GAME 1 — GROW YOUR ROOT  (canvas)
+   ============================================================ */
+const cvs = $("#g1canvas"), ctx = cvs.getContext("2d");
+const WORLD_W = 800, PX_PER_CM = 30;
+let G1 = null, rafId = null, keys = {left:false, right:false};
+
+function fitCanvas(){
+  cvs.width  = cvs.clientWidth * devicePixelRatio;
+  cvs.height = cvs.clientHeight * devicePixelRatio;
+}
+window.addEventListener("resize", fitCanvas);
+
+function g1ready(){
+  fitCanvas();
+  G1 = null;
+  $("#g1oTitle").textContent = "Grow Your Root!";
+  $("#g1oText").style.display = "";
+  $("#g1oFact").style.display = "none";
+  $("#g1start").textContent = "GROW! 🌱";
+  $("#g1overlay").style.display = "flex";
+  cancelIdle();
+}
+$("#g1start").addEventListener("click", ()=>{ audio(); g1new(); });
+
+const FACTS = [
+  "A maize root can grow DEEPER than your dad is tall — up to 2 meters!",
+  "One rye plant can grow over 600 km of roots. That's a road trip!",
+  "Root tips can sense water and grow toward it — like a treasure hunt!",
+  "Roots breathe! They need air pockets in the soil to stay alive.",
+  "N, P and K are plant vitamins: Nitrogen, Phosphorus and Potassium."
+];
+
+function g1new(){
+  $("#g1overlay").style.display = "none";
+  cancelIdle();
+  G1 = {
+    tip:{x:WORLD_W/2, y:0}, vx:0,
+    trail:[{x:WORLD_W/2,y:0}],
+    rocks:[], items:[], genY:120,
+    water:0, nutri:0, time:60, stun:0,
+    over:false, last:performance.now(), shake:0
+  };
+  g1loop();
+}
+function g1stop(){ if(rafId){ cancelAnimationFrame(rafId); rafId=null; } G1=null; cancelIdle(); }
+
+function g1gen(untilY){
+  const g = G1;
+  while(g.genY < untilY){
+    const y0 = g.genY, band = 240;
+    const nRocks = 2 + (Math.random()<0.5?1:0) + Math.floor(y0/4000);
+    for(let i=0;i<Math.min(nRocks,5);i++){
+      g.rocks.push({ x:60+Math.random()*(WORLD_W-120), y:y0+Math.random()*band,
+                     r:24+Math.random()*24, hitUntil:0 });
+    }
+    const place = (kind)=>{
+      for(let t=0;t<8;t++){
+        const x=50+Math.random()*(WORLD_W-100), y=y0+Math.random()*band;
+        if(!g.rocks.some(r=>Math.hypot(r.x-x,r.y-y)<r.r+34)){
+          g.items.push({x,y,kind}); return;
+        }
+      }
+    };
+    place("W"); place("W");
+    place(["N","P","K"][Math.floor(Math.random()*3)]);
+    if(Math.random()<0.6) place(["N","P","K"][Math.floor(Math.random()*3)]);
+    g.genY += band;
+  }
+}
+
+function toast(msg){
+  const t = $("#g1toast");
+  t.textContent = msg; t.style.opacity = 1;
+  clearTimeout(t._t); t._t = setTimeout(()=>t.style.opacity=0, 1800);
+}
+const MILES = {50:"50 cm — deeper than a ruler! 📏",100:"1 meter deep! Wow! 🤩",150:"1.5 m — deeper than most kids are tall! 🧒",200:"2 METERS! Champion root! 🏆"};
+
+function g1loop(){
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(g1loop);
+  const g = G1; if(!g) return;
+  const now = performance.now();
+  let dt = Math.min((now-g.last)/1000, 0.05); g.last = now;
+
+  if(!g.over){
+    g.time -= dt;
+    if(g.time <= 0){ g.time = 0; return g1end(); }
+    if(g.stun > 0) g.stun -= dt;
+
+    const steer = (keys.left?-1:0) + (keys.right?1:0);
+    const target = steer * 220;
+    g.vx += (target - g.vx) * Math.min(1, dt*8);
+    const vy = g.stun>0 ? 50 : 105;
+    g.tip.x = Math.max(24, Math.min(WORLD_W-24, g.tip.x + g.vx*dt));
+    g.tip.y += vy*dt;
+
+    const lastP = g.trail[g.trail.length-1];
+    if(Math.hypot(g.tip.x-lastP.x, g.tip.y-lastP.y) > 8) g.trail.push({x:g.tip.x, y:g.tip.y});
+
+    g1gen(g.tip.y + cvs.height/devicePixelRatio * (WORLD_W/cvs.width*devicePixelRatio) + 1200);
+
+    for(const r of g.rocks){
+      if(now < r.hitUntil) continue;
+      const d = Math.hypot(r.x-g.tip.x, r.y-g.tip.y);
+      if(d < r.r + 9){
+        r.hitUntil = now + 1200;
+        g.stun = 0.7; g.shake = 0.35; sfx.bonk();
+        g.tip.x += (g.tip.x >= r.x ? 1 : -1) * 26;
+        g.tip.x = Math.max(24, Math.min(WORLD_W-24, g.tip.x));
+        toast("Bonk! 🪨 Grow around the rocks!");
+      }
+    }
+    for(const it of g.items){
+      if(it.got) continue;
+      if(Math.hypot(it.x-g.tip.x, it.y-g.tip.y) < 30){
+        it.got = true;
+        if(it.kind==="W"){ g.water++; sfx.water(); } else { g.nutri++; sfx.pick(); }
+      }
+    }
+    const cm = Math.floor(g.tip.y / PX_PER_CM);
+    for(const m in MILES){ if(cm>=+m && !g["m"+m]){ g["m"+m]=true; toast(MILES[m]); sfx.ding(); } }
+
+    $("#g1time").textContent = Math.ceil(g.time);
+    $("#g1water").textContent = g.water;
+    $("#g1nutri").textContent = g.nutri;
+    $("#g1depth").textContent = cm;
+    if(g.shake>0) g.shake -= dt;
+  }
+  g1draw();
+}
+
+function g1end(){
+  const g = G1; g.over = true;
+  sfx.fanfare();
+  const cm = Math.floor(g.tip.y/PX_PER_CM);
+  const score = g.water + g.nutri;
+  const stars = score>=14?"⭐⭐⭐":score>=8?"⭐⭐":"⭐";
+  $("#g1oTitle").textContent = "Time's up! " + stars;
+  $("#g1oText").style.display = "";
+  $("#g1oText").innerHTML = "Your root grew <b>"+cm+" cm</b> deep!<br>💧 Water: <b>"+g.water+"</b> &nbsp; 🧪 Nutrients: <b>"+g.nutri+"</b>";
+  const f = $("#g1oFact");
+  f.textContent = "🌱 Fun fact: " + FACTS[Math.floor(Math.random()*FACTS.length)];
+  f.style.display = "";
+  $("#g1start").textContent = "Play Again 🔁";
+  $("#g1overlay").style.display = "flex";
+  armIdle();
+}
+
+/* drawing */
+function hash(i,j){ const s = Math.sin(i*127.1 + j*311.7)*43758.5453; return s - Math.floor(s); }
+
+function g1draw(){
+  const g = G1; if(!g) return;
+  const W = cvs.width, H = cvs.height;
+  const scale = W / WORLD_W;
+  const camY = g.tip.y - (H/scale)*0.35;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  if(g.shake>0){ ctx.translate((Math.random()-0.5)*10, (Math.random()-0.5)*10); }
+  ctx.scale(scale, scale);
+  ctx.translate(0, -camY);
+
+  const viewTop = camY, viewBot = camY + H/scale;
+
+  // soil
+  const grad = ctx.createLinearGradient(0, viewTop, 0, viewBot);
+  grad.addColorStop(0, "#96653a"); grad.addColorStop(1, "#5e3d1f");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, Math.max(0,viewTop), WORLD_W, viewBot - Math.max(0,viewTop));
+  // speckles
+  ctx.fillStyle = "rgba(60,38,18,.35)";
+  const cell = 46;
+  for(let j=Math.floor(Math.max(0,viewTop)/cell); j<viewBot/cell; j++){
+    for(let i=0;i<WORLD_W/cell;i++){
+      const h1 = hash(i,j);
+      if(h1<0.55){
+        const px = i*cell + hash(i+7,j)*cell, py = j*cell + hash(i,j+13)*cell;
+        ctx.beginPath(); ctx.arc(px,py, 2+h1*4, 0, 7); ctx.fill();
+      }
+    }
+  }
+
+  // items
+  for(const it of g.items){
+    if(it.got || it.y<viewTop-40 || it.y>viewBot+40) continue;
+    if(it.kind==="W"){
+      ctx.fillStyle = "#3b9ae0";
+      ctx.beginPath();
+      ctx.moveTo(it.x, it.y-16);
+      ctx.quadraticCurveTo(it.x+14, it.y+2, it.x, it.y+14);
+      ctx.quadraticCurveTo(it.x-14, it.y+2, it.x, it.y-16);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.7)";
+      ctx.beginPath(); ctx.arc(it.x-4, it.y+2, 3.5, 0, 7); ctx.fill();
+    } else {
+      const col = it.kind==="N" ? "#5cb85c" : it.kind==="P" ? "#f5a623" : "#a06ae0";
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(it.x, it.y, 16, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(it.kind, it.x, it.y+1);
+    }
+  }
+
+  // rocks
+  for(const r of g.rocks){
+    if(r.y<viewTop-60 || r.y>viewBot+60) continue;
+    ctx.fillStyle = "#7d7d85";
+    ctx.beginPath(); ctx.ellipse(r.x, r.y, r.r, r.r*0.82, 0.3, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#4c4c52"; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.25)";
+    ctx.beginPath(); ctx.ellipse(r.x-r.r*0.3, r.y-r.r*0.35, r.r*0.3, r.r*0.2, 0.3, 0, 7); ctx.fill();
+  }
+
+  // root trail
+  const pts = g.trail;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.strokeStyle = "#f5e9d0"; ctx.lineWidth = 13;
+  ctx.beginPath();
+  let started = false;
+  for(let i=0;i<pts.length;i++){
+    const p = pts[i];
+    if(p.y < viewTop-60 && (i+1>=pts.length || pts[i+1].y<viewTop-60)) continue;
+    if(!started){ ctx.moveTo(p.x,p.y); started=true; } else ctx.lineTo(p.x,p.y);
+  }
+  if(started){ ctx.lineTo(g.tip.x, g.tip.y); ctx.stroke(); }
+  // little side rootlets
+  ctx.strokeStyle = "rgba(245,233,208,.8)"; ctx.lineWidth = 4;
+  for(let i=6;i<pts.length-4;i+=7){
+    const p = pts[i];
+    if(p.y<viewTop-20||p.y>viewBot+20) continue;
+    const dir = (i%14===6)?1:-1, len = 14+hash(i,3)*14;
+    ctx.beginPath(); ctx.moveTo(p.x,p.y);
+    ctx.quadraticCurveTo(p.x+dir*len*0.7, p.y+6, p.x+dir*len, p.y+13);
+    ctx.stroke();
+  }
+  // tip
+  ctx.fillStyle = "#fffef5";
+  ctx.beginPath(); ctx.arc(g.tip.x, g.tip.y, 9, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#d8c9a5"; ctx.lineWidth=2; ctx.stroke();
+
+  // sky + plant at surface
+  if(viewTop < 0){
+    ctx.fillStyle = "#aee3ff"; ctx.fillRect(0, viewTop, WORLD_W, -viewTop);
+    ctx.fillStyle = "#ffd93b";
+    ctx.beginPath(); ctx.arc(680, viewTop+50, 34, 0, 7); ctx.fill();
+    ctx.fillStyle = "#6fbf49"; ctx.fillRect(0, -14, WORLD_W, 14);
+    const sx = WORLD_W/2;
+    ctx.strokeStyle = "#3f8f3f"; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(sx, -10); ctx.lineTo(sx, -66); ctx.stroke();
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(sx,-38); ctx.quadraticCurveTo(sx-36,-52,sx-52,-84); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx,-50); ctx.quadraticCurveTo(sx+36,-62,sx+52,-96); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* controls */
+window.addEventListener("keydown", e=>{
+  if(!$("#game1").classList.contains("active")) return;
+  if(e.key==="ArrowLeft"){ keys.left=true; e.preventDefault(); }
+  if(e.key==="ArrowRight"){ keys.right=true; e.preventDefault(); }
+});
+window.addEventListener("keyup", e=>{
+  if(e.key==="ArrowLeft") keys.left=false;
+  if(e.key==="ArrowRight") keys.right=false;
+});
+function bindHold(el, key){
+  const on = e=>{ e.preventDefault(); keys[key]=true; };
+  const off = ()=>{ keys[key]=false; };
+  el.addEventListener("pointerdown", on);
+  el.addEventListener("pointerup", off);
+  el.addEventListener("pointercancel", off);
+  el.addEventListener("pointerleave", off);
+}
+bindHold($("#leftBtn"), "left");
+bindHold($("#rightBtn"), "right");
+cvs.addEventListener("pointerdown", e=>{
+  const half = cvs.clientWidth/2;
+  if(e.clientX < half) keys.left = true; else keys.right = true;
+});
+cvs.addEventListener("pointerup", ()=>{ keys.left=false; keys.right=false; });
+cvs.addEventListener("pointercancel", ()=>{ keys.left=false; keys.right=false; });
+
+/* ============================================================
+   GAME 2 — LABEL THE ROOT  (SVG drag & drop)
+   ============================================================ */
+const ZONES = [
+  {id:"epidermis", label:"🛡️ Skin (epidermis)",   color:"#c98940", tag:"Skin — epidermis"},
+  {id:"cortex",    label:"🧽 Sponge (cortex)",     color:"#6aa844", tag:"Sponge — cortex"},
+  {id:"xylem",     label:"💧 Water Pipes (xylem)", color:"#3b9ae0", tag:"Water pipes — xylem"},
+  {id:"phloem",    label:"🍯 Food Pipes (phloem)", color:"#e8912a", tag:"Food pipes — phloem"}
+];
+const SVGNS = "http://www.w3.org/2000/svg";
+let g2done = 0;
+
+function el(name, attrs, parent){
+  const n = document.createElementNS(SVGNS, name);
+  for(const k in attrs) n.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(n);
+  return n;
+}
+
+function buildSVG(){
+  const wrap = $("#svgwrap");
+  wrap.innerHTML = "";
+  const svg = el("svg", {id:"rootsvg", viewBox:"0 0 600 600"});
+  wrap.appendChild(svg);
+  const cx=300, cy=300;
+
+  // epidermis (outer ring: big tan circle, cortex drawn on top)
+  el("circle", {cx,cy,r:282, fill:"#d9a05b", stroke:"#3b2a1a", "stroke-width":5, "data-zone":"epidermis", id:"z-epidermis"}, svg);
+  // cortex
+  const cortex = el("g", {id:"z-cortex"}, svg);
+  el("circle", {cx,cy,r:244, fill:"#b8d98a", "data-zone":"cortex"}, cortex);
+  // decorative cortex "cells" (non-interactive)
+  const deco = el("g", {"pointer-events":"none"}, svg);
+  for(let ring=0; ring<4; ring++){
+    const rr = 148 + ring*24;
+    const n = 14 + ring*4;
+    for(let k=0;k<n;k++){
+      const a = (k/n)*Math.PI*2 + ring*0.2;
+      el("circle", {cx:cx+rr*Math.cos(a), cy:cy+rr*Math.sin(a), r:9.5,
+                    fill:"#d2e8ad", stroke:"#8fb35e", "stroke-width":1.5}, deco);
+    }
+  }
+  // stele
+  el("circle", {cx,cy,r:118, fill:"#f0e4f5", stroke:"#6b4f7a", "stroke-width":4, "pointer-events":"none"}, svg);
+  el("circle", {cx,cy,r:118, fill:"transparent"}, svg); // catches stray drops (no data-zone)
+  // pith
+  el("circle", {cx,cy,r:34, fill:"#e6d6ee", stroke:"#c5aed3", "stroke-width":2}, svg);
+
+  // xylem (8 big blue circles) + phloem (8 small orange, between)
+  const R = 76;
+  for(let k=0;k<8;k++){
+    const a = k*Math.PI/4;
+    const x = cx+R*Math.cos(a), y = cy+R*Math.sin(a);
+    const gx = el("g", {class:"zx"}, svg);
+    el("circle", {cx:x, cy:y, r:26, fill:"#4aa3e0", stroke:"#2b6fa8", "stroke-width":3.5, "data-zone":"xylem"}, gx);
+    el("circle", {cx:x-7, cy:y-7, r:7, fill:"rgba(255,255,255,.5)", "pointer-events":"none"}, gx);
+  }
+  for(let k=0;k<8;k++){
+    const a = k*Math.PI/4 + Math.PI/8;
+    const x = cx+108*Math.cos(a), y = cy+108*Math.sin(a);
+    const gp = el("g", {class:"zp"}, svg);
+    el("circle", {cx:x, cy:y, r:22, fill:"transparent", "data-zone":"phloem"}, gp); // fat hit area
+    el("circle", {cx:x, cy:y, r:14, fill:"#f5a623", stroke:"#b8770f", "stroke-width":3, "data-zone":"phloem"}, gp);
+  }
+
+  // success tags (hidden until correct)
+  const tagPos = {
+    epidermis:[300,42], cortex:[152,186],
+    xylem:[300+R,300-8], phloem:[300+108*Math.cos(Math.PI/8),300+108*Math.sin(Math.PI/8)+34]
+  };
+  for(const z of ZONES){
+    const [tx,ty] = tagPos[z.id];
+    const gT = el("g", {id:"tag-"+z.id, visibility:"hidden", "pointer-events":"none"}, svg);
+    const txt = el("text", {x:tx, y:ty, "text-anchor":"middle", "font-size":22, "font-weight":"800",
+                            fill:"#3b2a1a", "font-family":"Segoe UI, Arial"}, gT);
+    txt.textContent = z.tag;
+    const bb = {w: z.tag.length*11.5+20, h:32};
+    const rect = el("rect", {x:tx-bb.w/2, y:ty-24, width:bb.w, height:bb.h, rx:14,
+                             fill:"rgba(255,248,236,.95)", stroke:z.color, "stroke-width":3.5}, gT);
+    gT.insertBefore(rect, txt);
+  }
+}
+
+function buildTray(){
+  const tray = $("#tray");
+  tray.innerHTML = "";
+  const order = [...ZONES].sort(()=>Math.random()-0.5);
+  for(const z of order){
+    const c = document.createElement("div");
+    c.className = "chip";
+    c.style.background = z.color;
+    c.textContent = z.label;
+    c.dataset.zone = z.id;
+    tray.appendChild(c);
+    makeDraggable(c);
+  }
+}
+
+function makeDraggable(chip){
+  chip.addEventListener("pointerdown", e=>{
+    if(chip.classList.contains("done")) return;
+    e.preventDefault(); audio();
+    const ph = document.createElement("div"); // placeholder keeps tray layout
+    ph.style.cssText = "width:"+chip.offsetWidth+"px;height:"+chip.offsetHeight+"px;visibility:hidden;";
+    chip.parentNode.insertBefore(ph, chip);
+    chip.classList.add("dragging");
+    document.body.appendChild(chip);
+    const move = ev=>{
+      chip.style.left = ev.clientX+"px";
+      chip.style.top  = ev.clientY+"px";
+      highlightUnder(ev.clientX, ev.clientY);
+    };
+    move(e);
+    const up = ev=>{
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      clearGlow();
+      chip.classList.remove("dragging");
+      chip.style.left = chip.style.top = "";
+      const target = zoneAt(ev.clientX, ev.clientY);
+      ph.parentNode.insertBefore(chip, ph);
+      ph.remove();
+      if(target && target === chip.dataset.zone){
+        chip.classList.add("done");
+        sfx.ding();
+        const tag = $("#tag-"+target);
+        if(tag) tag.setAttribute("visibility","visible");
+        pulseZone(target);
+        g2done++;
+        if(g2done>=4) setTimeout(g2win, 500);
+      } else {
+        sfx.buzz();
+        chip.classList.add("shake");
+        setTimeout(()=>chip.classList.remove("shake"), 450);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  });
+}
+
+function zoneAt(x,y){
+  const elm = document.elementFromPoint(x,y);
+  return elm && elm.getAttribute ? elm.getAttribute("data-zone") : null;
+}
+let glowEls = [];
+function clearGlow(){ glowEls.forEach(n=>n.classList.remove("zone-glow")); glowEls=[]; }
+function highlightUnder(x,y){
+  clearGlow();
+  const z = zoneAt(x,y);
+  if(z){ zoneNodes(z).forEach(n=>{ n.classList.add("zone-glow"); glowEls.push(n); }); }
+}
+function zoneNodes(z){
+  return $$("#rootsvg [data-zone='"+z+"']");
+}
+function pulseZone(z){
+  const nodes = zoneNodes(z);
+  let c = 0;
+  const iv = setInterval(()=>{
+    nodes.forEach(n=>n.classList.toggle("zone-glow"));
+    if(++c>=6){ clearInterval(iv); nodes.forEach(n=>n.classList.remove("zone-glow")); }
+  }, 180);
+}
+
+function g2reset(){
+  g2done = 0;
+  $("#g2overlay").style.display = "none";
+  buildSVG();
+  buildTray();
+  cancelIdle();
+}
+$("#g2again").addEventListener("click", g2reset);
+$("#g2menu").addEventListener("click", ()=>show("#menu"));
+
+/* confetti */
+const cCvs = $("#confetti"), cCtx = cCvs.getContext("2d");
+function g2win(){
+  sfx.fanfare();
+  $("#g2overlay").style.display = "flex";
+  armIdle();
+  cCvs.width = cCvs.clientWidth; cCvs.height = cCvs.clientHeight;
+  const parts = [];
+  const cols = ["#ff5959","#ffd93b","#5cb85c","#3b9ae0","#f5a623","#a06ae0"];
+  for(let i=0;i<160;i++){
+    parts.push({x:Math.random()*cCvs.width, y:-20-Math.random()*cCvs.height*0.5,
+      vy:120+Math.random()*220, vx:(Math.random()-0.5)*80, r:5+Math.random()*7,
+      c:cols[i%cols.length], a:Math.random()*7, va:(Math.random()-0.5)*8});
+  }
+  let last = performance.now();
+  function tick(now){
+    const dt = Math.min((now-last)/1000, .05); last = now;
+    cCtx.clearRect(0,0,cCvs.width,cCvs.height);
+    let alive = false;
+    for(const p of parts){
+      p.y += p.vy*dt; p.x += p.vx*dt; p.a += p.va*dt;
+      if(p.y < cCvs.height+20) alive = true;
+      cCtx.save(); cCtx.translate(p.x,p.y); cCtx.rotate(p.a);
+      cCtx.fillStyle = p.c; cCtx.fillRect(-p.r,-p.r/2,p.r*2,p.r);
+      cCtx.restore();
+    }
+    if(alive && $("#g2overlay").style.display==="flex") requestAnimationFrame(tick);
+    else cCtx.clearRect(0,0,cCvs.width,cCvs.height);
+  }
+  requestAnimationFrame(tick);
+}
+
+/* ============================================================
+   GAME 3 — FARM BOSS!  (budget decision game, sowing → harvest)
+   ============================================================ */
+const G3YEARS = {
+  perfect:{emoji:"☀️", name:"A Perfect Year!", desc:"Warm sun, gentle rain — corn heaven!",
+           hint:"Mild and sunny skies ahead ☀️"},
+  drought:{emoji:"🌵", name:"DROUGHT!", desc:"No rain for weeks... the soil bakes hard.",
+           hint:"A HOT and DRY summer is coming 🌡️"},
+  storm:  {emoji:"⛈️", name:"BIG STORMS!", desc:"Wind and hail batter the fields.",
+           hint:"Wild storms are brewing ⛈️"},
+  disease:{emoji:"🦠", name:"DISEASE OUTBREAK!", desc:"Leaf blight is spreading farm to farm!",
+           hint:"Warm and muggy weather coming — germs LOVE that 🦠"}
+};
+const G3SEEDS = [
+  {id:"normal", emoji:"🌽", name:"Normal Seed", price:10, pts:5,
+   blurb:"Ordinary roots. Cheap and cheerful!", fb:"Planted! Let's hope for good weather. 🤞"},
+  {id:"drought", emoji:"🌽🕳️", name:"Drought-Buster", price:20, pts:8,
+   blurb:"DEEP roots that drink water from far below.", fb:"This seed's roots grow EXTRA deep — drought armor! 🕳️💧"},
+  {id:"shield", emoji:"🌽🛡️", name:"Disease-Shield", price:20, pts:8,
+   blurb:"Special armor against crop diseases.", fb:"Armor up! Germs can't touch this corn. 🛡️"},
+  {id:"super", emoji:"🌽⭐", name:"Super Seed", price:35, pts:12,
+   blurb:"Deep roots AND disease armor. Pricey!", fb:"The ultimate seed — scientists worked YEARS on this one! ⭐"}
+];
+const G3PREP = [
+  {id:"tractor", emoji:"🚜", name:"Rent a Tractor", price:15, pts:15,
+   blurb:"Plows a soft, fluffy seed bed.", fb:"VROOM! A perfect fluffy seed bed. 🚜"},
+  {id:"hand", emoji:"🧑‍🌾", name:"Hand Tools", price:5, pts:5,
+   blurb:"Cheap, but hard work and a bumpy field.", fb:"Phew! Hard work... the field is a bit bumpy. 💦"}
+];
+const G3FERT = [
+  {id:"none", emoji:"🚫", name:"No Fertilizer", price:0, pts:0,
+   blurb:"Save money — but plants stay hungry.", fb:"Your corn looks a little hungry... 😟"},
+  {id:"right", emoji:"💩", name:"Just Right", price:15, pts:20,
+   blurb:"A healthy meal of N-P-K for your corn.", fb:"Yum! A perfect meal — N, P and K! 😋"},
+  {id:"double", emoji:"💩💩", name:"DOUBLE Dose!", price:30, pts:22,
+   blurb:"MORE must be better... right?", fb:"Uh oh — the extra washed into the creek! 🐟 Wasted money AND pollution."}
+];
+const G3WATER = [
+  {id:"none", emoji:"🙏", name:"Hope for Rain", price:0, pts:0,
+   blurb:"Free! But what if it doesn't rain?", fb:"Fingers crossed for rain clouds... 🤞"},
+  {id:"sprink", emoji:"🚿", name:"Sprinklers", price:10, pts:8,
+   blurb:"Sprays the field. Some water evaporates.", fb:"Psssst psssst! 🚿 (Some blows away in the wind...)"},
+  {id:"drip", emoji:"💧", name:"Drip Lines", price:20, pts:14,
+   blurb:"Delivers every drop straight to the roots.", fb:"Every drop goes right to the ROOTS. Smart! 💧"}
+];
+const G3HARV = [
+  {id:"combine", emoji:"🌾🚜", name:"Rent a Combine", price:15, mult:1.0,
+   blurb:"The big machine gets every last ear!", fb:"The combine gobbles up EVERY ear! 🌽🌽🌽"},
+  {id:"hand", emoji:"🧺", name:"Pick by Hand", price:0, mult:0.8,
+   blurb:"Free — but some corn gets left behind.", fb:"Basket by basket... oops, missed some ears back there! 🧺"}
+];
+const G3CRISIS = {
+  weeds:{q:"😱 WEEDS are stealing your corn's water and food!",
+    pay:{emoji:"🧑‍🌾✂️", name:"Hire Weeding Crew", price:10, blurb:"Pull every weed out."},
+    skip:{emoji:"🙈", name:"Ignore Them", price:0, blurb:"They're just little plants... right?"},
+    payFb:"Weeds gone! Your corn stretches out happily. ✂️", skipFb:"The weeds grew HUGE and hogged the water... 😬"},
+  storm:{q:"😱 The storm knocked plants flat on the ground!",
+    pay:{emoji:"🧑‍🌾🪵", name:"Prop & Replant", price:10, blurb:"Stand them back up fast."},
+    skip:{emoji:"🙈", name:"Leave Them", price:0, blurb:"Maybe they'll get up on their own?"},
+    payFb:"You saved the fallen plants just in time! 💪", skipFb:"Flattened corn can't catch sunshine... 😬"},
+  disease:{q:"😱 Spotty blight is creeping across the leaves!",
+    pay:{emoji:"🧑‍⚕️🌽", name:"Call the Plant Doctor", price:10, blurb:"Treat the field right away."},
+    skip:{emoji:"🙈", name:"Do Nothing", price:0, blurb:"It's only a few spots..."},
+    payFb:"The plant doctor slowed it down! 🧑‍⚕️", skipFb:"The spots spread everywhere... 😬"}
+};
+let G3 = null;
+const $stage = () => $("#g3stage");
+
+function g3lb(){ try{ return JSON.parse(localStorage.getItem("farmBossLB")||"[]"); }catch(e){ return G3._lb||[]; } }
+function g3lbSave(list){ try{ localStorage.setItem("farmBossLB", JSON.stringify(list)); }catch(e){ if(G3) G3._lb=list; } }
+
+$("#playG3").addEventListener("click", ()=>{ audio(); show("#game3"); g3start(); });
+
+function g3start(){
+  const years = Object.keys(G3YEARS);
+  const year = years[Math.floor(Math.random()*years.length)];
+  let forecast = year;
+  if(Math.random() > 0.7){
+    const others = years.filter(y=>y!==year);
+    forecast = others[Math.floor(Math.random()*others.length)];
+  }
+  G3 = {year, forecast, spent:0, picks:{}, crisisPaid:false, name:""};
+  g3cash(); g3field("dirt"); g3season("🗓️ Spring");
+  g3screen(`
+    <h2>🧑‍🌾 Welcome to YOUR farm!</h2>
+    <p class="story">You have <b>$100</b> to grow a corn crop — from sowing all the way to harvest.<br>
+    Spend it <b>wisely</b>: every choice matters. Sell your corn at the end.<br>Can you make a <b>PROFIT</b>? 💰</p>
+    <div class="weathercard"><div class="wemoji">📖</div>
+      <h2>The Farmer's Almanac says:</h2>
+      <p class="story"><b>"${G3YEARS[G3.forecast].hint}"</b></p>
+      <p class="story" style="font-size:.85em;">(Forecasts are helpful... but not always right!)</p>
+    </div>
+    <button class="bigbtn green" id="g3go">START FARMING! 🚜</button>
+  `);
+  $("#g3go").addEventListener("click", g3stepPrep);
+}
+
+function g3cash(){ $("#g3cash").textContent = 100 - (G3?G3.spent:0); }
+function g3season(t){ $("#g3season").textContent = t; }
+function g3screen(html){ $stage().innerHTML = html; $("#game3").scrollTop = 0; }
+
+function g3field(mode){
+  const F = $("#g3field");
+  const mk = (a)=>Array.from({length:2},(_,r)=>a.repeat(9)).join("<br>");
+  const map = {
+    dirt: mk("🟤"), tilled: mk("🟫"), sown: mk("🌱"), young: mk("🌿"), tall: mk("🌾"),
+    corn: mk("🌽"), hurt: Array.from({length:2},()=> [..."🌽🥀🌽🥀🥀🌽🥀🌽🥀"].sort(()=>Math.random()-.5).join("")).join("<br>"),
+    dead: mk("🥀"), done: mk("🧺")
+  };
+  F.innerHTML = map[mode] || map.dirt;
+}
+
+function g3choices(title, story, options, cls, onPick){
+  g3screen(`
+    <h2>${title}</h2>
+    <p class="story">${story}</p>
+    <div class="g3grid" id="g3grid"></div>
+    <div id="g3feedback"></div>
+  `);
+  const grid = $("#g3grid");
+  let chosen = false;
+  const cashLeft = 100 - G3.spent;
+  for(const opt of options){
+    const d = document.createElement("div");
+    d.className = "g3choice" + (opt.price===0?" free":"");
+    const locked = opt.price > cashLeft;
+    if(locked) d.classList.add("locked");
+    d.innerHTML = `<div class="emoji">${opt.emoji}</div><h3>${opt.name}</h3><p>${opt.blurb||""}</p>
+                   <div class="price">${opt.price===0?"FREE":"$"+opt.price}</div>`;
+    d.addEventListener("click", ()=>{
+      if(chosen) return;
+      if(locked){ sfx.buzz(); g3feedback("🔒 Not enough money left for that one!"); return; }
+      chosen = true;
+      d.classList.add("picked");
+      G3.spent += opt.price; G3.picks[cls] = opt; g3cash();
+      if(opt.price>0) sfx.pick(); else sfx.ding();
+      g3feedback(opt.fb || "✅ "+opt.name);
+      setTimeout(()=>onPick(opt), 1600);
+    });
+    grid.appendChild(d);
+  }
+}
+function g3feedback(msg){
+  const f = $("#g3feedback");
+  if(!f) return;
+  f.textContent = msg; f.style.visibility = "visible";
+}
+
+/* --- season steps in real farming order --- */
+function g3stepPrep(){
+  g3season("🗓️ Spring — field prep");
+  g3choices("Step 1: Prepare your field 🚜", "Corn seeds need a nice soft bed of soil.",
+    G3PREP, "prep", ()=>{ g3field("tilled"); g3stepSeed(); });
+}
+function g3stepSeed(){
+  g3season("🗓️ Spring — sowing");
+  g3choices("Step 2: Choose your seed 🌱",
+    "Look at the ROOTS under each seed — that's where the superpower hides!",
+    G3SEEDS, "seed", ()=>{ g3field("sown"); g3stepFert(); });
+}
+function g3stepFert(){
+  g3season("🗓️ Early summer");
+  g3field("young");
+  g3choices("Step 3: Feed your corn 💩", "Fertilizer is plant food: N, P and K.",
+    G3FERT, "fert", g3stepWater);
+}
+function g3stepWater(){
+  g3season("🗓️ Summer");
+  g3field("tall");
+  g3choices("Step 4: Water plan 💧", "Corn drinks a LOT. How will yours get water?",
+    G3WATER, "water", g3stepWeather);
+}
+function g3stepWeather(){
+  g3season("🗓️ Midsummer");
+  const Y = G3YEARS[G3.year];
+  const wrong = G3.forecast !== G3.year;
+  g3screen(`
+    <h2>The season rolls on...</h2>
+    <div class="weathercard"><div class="wemoji">${Y.emoji}</div>
+      <h2>${Y.name}</h2>
+      <p class="story">${Y.desc}</p>
+      ${wrong ? '<p class="story"><b>The Almanac was WRONG!</b> Weather fools everyone sometimes. 😅</p>' : '<p class="story">The Almanac was right! 📖✅</p>'}
+    </div>
+    <button class="bigbtn blue" id="g3next">What happens to MY farm? 👀</button>
+  `);
+  sfx.bonk();
+  const protectedDrought = ["drought","super"].includes(G3.picks.seed.id);
+  const protectedDisease = ["shield","super"].includes(G3.picks.seed.id);
+  if((G3.year==="drought" && !protectedDrought && G3.picks.water.id==="none") ||
+     (G3.year==="disease" && !protectedDisease)) g3field("hurt");
+  $("#g3next").addEventListener("click", g3stepCrisis);
+}
+function g3stepCrisis(){
+  g3season("🗓️ Late summer");
+  const protectedDisease = ["shield","super"].includes(G3.picks.seed.id);
+  if(G3.year==="disease" && protectedDisease){
+    g3field("corn");
+    g3screen(`
+      <h2>🛡️ Seed power activated!</h2>
+      <div class="weathercard"><div class="wemoji">🌽🛡️🦠</div>
+        <h2>Your ${G3.picks.seed.name} FIGHTS OFF the blight!</h2>
+        <p class="story">All around, other farms turn brown... but your field stays green.<br>That's plant breeding at work — and it cost you $0 today!</p>
+      </div>
+      <button class="bigbtn green" id="g3next">On to harvest! 🌾</button>
+    `);
+    sfx.fanfare();
+    G3.crisisFree = true;
+    $("#g3next").addEventListener("click", g3stepHarvest);
+    return;
+  }
+  const kind = G3.year==="storm" ? "storm" : G3.year==="disease" ? "disease" : "weeds";
+  const C = G3CRISIS[kind];
+  const pay  = {...C.pay,  fb:C.payFb};
+  const skip = {...C.skip, fb:C.skipFb};
+  g3choices("Step 5: Trouble on the farm!", C.q, [pay, skip], "crisis", (opt)=>{
+    G3.crisisPaid = (opt === pay) || opt.price>0;
+    g3stepHarvest();
+  });
+}
+function g3stepHarvest(){
+  g3season("🗓️ Fall — harvest time!");
+  g3field("corn");
+  g3choices("Step 6: Harvest day! 🌾", "The corn is golden and ready. How do you bring it in?",
+    G3HARV, "harvest", g3results);
+}
+
+/* --- scoring + results --- */
+function g3results(){
+  const p = G3.picks, year = G3.year;
+  let pts = 40 + p.seed.pts + p.prep.pts + p.fert.pts + p.water.pts;
+  const droughtSafe = ["drought","super"].includes(p.seed.id);
+  const diseaseSafe = ["shield","super"].includes(p.seed.id);
+  let why = "";
+  if(year==="perfect"){
+    pts += 15;
+    why = "Perfect weather smiled on everyone — smart spending decided the winners!";
+  } else if(year==="drought"){
+    if(droughtSafe){ pts += 30; why = "Your seed's DEEP ROOTS found water far below when the rain stopped! 🕳️💧"; }
+    else {
+      pts -= 35;
+      if(p.water.id==="drip"){ pts += 20; why = "Drip lines saved your thirsty corn — a deep-rooted seed would have done even better!"; }
+      else if(p.water.id==="sprink"){ pts += 10; why = "Sprinklers helped a little, but the drought still hurt. Deep roots next time!"; }
+      else why = "The drought hit hard! A Drought-Buster seed or drip lines would have saved your corn.";
+    }
+  } else if(year==="disease"){
+    if(diseaseSafe){ pts += 30; why = "Your seed's built-in armor blocked the blight completely! 🛡️"; }
+    else {
+      pts -= 35;
+      if(G3.crisisPaid){ pts += 20; why = "The plant doctor saved part of the field — a Disease-Shield seed would have saved it ALL."; }
+      else why = "Blight ate your field! A Disease-Shield seed (or a quick treatment) next time.";
+    }
+  } else { // storm
+    pts -= 15;
+    why = droughtSafe || diseaseSafe
+      ? "Storms batter every farm — but your strong plants and quick work paid off."
+      : "Storms batter every farm. Strong, healthy plants bounce back best!";
+  }
+  if(year!=="disease" && !G3.crisisFree){
+    if(!G3.crisisPaid) pts -= 18;
+  }
+  pts = Math.max(0, pts) * p.harvest.mult;
+  const earn = Math.max(0, Math.round(pts*1.3/5)*5);
+  const profit = earn - G3.spent;
+  G3.profit = profit;
+
+  let title, stars;
+  if(profit>=70){ title="👑 FARM BOSS!"; stars="⭐⭐⭐"; }
+  else if(profit>=35){ title="🌟 Smart Farmer!"; stars="⭐⭐"; }
+  else if(profit>0){ title="🌱 Rookie Farmer"; stars="⭐"; }
+  else { title="💪 Tough Year!"; stars=""; }
+
+  g3field(profit>0 ? "done" : "dead");
+  g3season("🗓️ Market day");
+  g3screen(`
+    <h2>${title} ${stars}</h2>
+    <div class="receipt">
+      <div class="row"><span>🌽 Corn sold for</span><span>$${earn}</span></div>
+      <div class="row"><span>💸 You spent</span><span>&minus;$${G3.spent}</span></div>
+      <div class="row total"><span>${profit>=0?"💰 PROFIT":"📉 LOSS"}</span>
+        <span class="${profit>=0?'profit-pos':'profit-neg'}">${profit>=0?"$"+profit:"-$"+(-profit)}</span></div>
+    </div>
+    <p class="story"><b>Why?</b> ${why}</p>
+    ${profit<=0 ? '<p class="story">Farming is HARD — real farmers have tough years too. Try a different seed! 🧑‍🌾</p>' : ''}
+    <div class="g3grid">
+      <button class="bigbtn green" id="g3save">🏆 Save My Score</button>
+      <button class="bigbtn" id="g3again">Play Again 🔁</button>
+      <button class="bigbtn blue" id="g3menu">Menu 🏠</button>
+    </div>
+  `);
+  if(profit>0) sfx.fanfare(); else sfx.buzz();
+  armIdle();
+  $("#g3save").addEventListener("click", g3nameEntry);
+  $("#g3again").addEventListener("click", ()=>{ cancelIdle(); g3start(); });
+  $("#g3menu").addEventListener("click", ()=>show("#menu"));
+}
+
+function g3nameEntry(){
+  cancelIdle();
+  g3screen(`
+    <h2>Type your farmer name! (3 letters)</h2>
+    <div id="g3name">___</div>
+    <div class="kb" id="g3kb"></div>
+    <div class="g3grid">
+      <button class="bigbtn green" id="g3ok">DONE ✅</button>
+    </div>
+  `);
+  let name = "";
+  const draw = ()=>{ $("#g3name").textContent = (name + "___").slice(0,3); };
+  const kb = $("#g3kb");
+  for(const ch of "ABCDEFGHIJKLMNOPQRSTUVWXYZ"){
+    const b = document.createElement("button");
+    b.textContent = ch;
+    b.addEventListener("click", ()=>{ if(name.length<3){ name+=ch; sfx.pick(); draw(); } });
+    kb.appendChild(b);
+  }
+  const back = document.createElement("button");
+  back.textContent = "⌫";
+  back.addEventListener("click", ()=>{ name = name.slice(0,-1); sfx.buzz(); draw(); });
+  kb.appendChild(back);
+  draw();
+  $("#g3ok").addEventListener("click", ()=>{
+    const list = g3lb();
+    list.push({name: name||"???", profit: G3.profit});
+    list.sort((a,b)=>b.profit-a.profit);
+    g3lbSave(list.slice(0,10));
+    g3leaderboard(name||"???");
+  });
+}
+
+function g3leaderboard(justSaved){
+  const list = g3lb();
+  const medals = ["🥇","🥈","🥉"];
+  let rows = list.map((e,i)=>{
+    const me = justSaved && e.name===justSaved && e.profit===G3.profit;
+    return `<div class="row${me?' me':''}"><span>${medals[i]||(i+1)+"."} ${e.name}</span>
+            <span>${e.profit>=0?"$"+e.profit:"-$"+(-e.profit)}</span></div>`;
+  }).join("");
+  if(!rows) rows = '<div class="row"><span>No farmers yet!</span><span></span></div>';
+  g3screen(`
+    <h2>🏆 Top Farmers Today 🏆</h2>
+    <div class="lb">${rows}</div>
+    <div class="g3grid">
+      <button class="bigbtn green" id="g3again">Play Again 🔁</button>
+      <button class="bigbtn blue" id="g3menu">Menu 🏠</button>
+    </div>
+  `);
+  sfx.fanfare();
+  armIdle();
+  $("#g3again").addEventListener("click", ()=>{ cancelIdle(); g3start(); });
+  $("#g3menu").addEventListener("click", ()=>show("#menu"));
+}
+</script>
+</body>
+</html>

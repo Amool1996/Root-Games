@@ -867,9 +867,9 @@ const RES={water:{c:"#2f9fe0",label:"💧 Water"}, N:{c:"#3fae63",label:"🟢 Ni
 // per weather: for each resource -> how many dots + depth band [shallow,deep] in cm
 function resourcePlan(env){
   return {
-    water: env==="Drought" ? {n:14,y0:70,y1:150} : {n:34,y0:2,y1:150},
-    N:     env==="LowN"    ? {n:9, y0:55,y1:150} : {n:26,y0:5,y1:120},
-    P:     env==="LowP"    ? {n:6, y0:1, y1:14 } : {n:22,y0:1,y1:26}
+    water: env==="Drought" ? {n:26,y0:70,y1:150} : {n:62,y0:2,y1:150},
+    N:     env==="LowN"    ? {n:16,y0:55,y1:150} : {n:48,y0:5,y1:120},
+    P:     env==="LowP"    ? {n:11,y0:1, y1:14 } : {n:40,y0:1,y1:26}
   };
 }
 /* roots are drawn pale, like a real washed root, and only take on colour where they drink */
@@ -937,16 +937,27 @@ async function runSim(){
     /* The 16 real OSR geometries barely differ in depth (gravitropism pulls them all down), so the
        Deep/Shallow card would be invisible. Stretch the real root to match the card that was picked. */
     const shallow=P.p.depth==="Sh";
-    P.yMul= shallow?0.48:1.0; P.xMul= shallow?1.55:0.85;
+    P.yMul= shallow?0.48:1.0; P.xMul= shallow?1.9:1.25;      // wider, so roots stop piling on each other
     P.thickMul=(P.p.thick==="Th")?1.7:(P.p.thick==="Sk")?0.6:1;
     P.sparse=P.p.bush==="Sp"; P.airy=P.p.air==="Ai";
-    P.segs=[];
+    /* A real 40-day maize system here is ~35,000 roots, 98% of them hair-thin laterals. Drawn
+       one-to-one they fuse into a white clump, so: main roots are kept whole, laterals are thinned
+       (Bushy keeps ~28%, Sparse ~9%) and drawn faint, and every segment remembers which root it
+       belongs to so colour can run along that root later. */
+    P.segs=[]; P.byRoot=[];
     if(P.data) P.data.roots.forEach((r,ri)=>{
-      const maxR=r.p.reduce((m,q)=>Math.max(m,q[4]||0),0);
-      if(maxR<0.03 && P.sparse && (ri*13)%100>=30) return;          // Sparse keeps ~30% of side roots
+      const maxR=r.p.reduce((m,q)=>Math.max(m,q[4]||0),0), lateral=maxR<0.03;
+      if(lateral && (ri*13)%100 >= (P.sparse?9:28)) return;
+      const R=P.byRoot.length; P.byRoot.push([]);
+      /* OpenSimRoot grows these inside a box (13 cm walls, 150 cm floor), so real roots pile up
+         against flat sides and a flat bottom. Give each root its own spread and a top-wide,
+         bottom-narrow taper so the system fans out like one growing in open ground. */
+      const jx=0.7+0.6*((ri*7919)%1000)/1000, jy=0.86+0.22*((ri*104729)%1000)/1000;
+      const fx=(x,y)=>x*jx*(1-0.32*Math.min(1,-y/150)), fy=y=>y*jy;
       for(let i=1;i<r.p.length;i++){ const a=r.p[i-1],b=r.p[i];
-        P.segs.push([a[0],a[1],b[0],b[1],Math.max(a[3],b[3]),b[4]]);
-        maxD=Math.max(maxD,-b[1]*P.yMul); maxHW=Math.max(maxHW,Math.abs(b[0])*P.xMul); }
+        P.byRoot[R].push(P.segs.length);
+        P.segs.push([fx(a[0],a[1]),fy(a[1]),fx(b[0],b[1]),fy(b[1]),Math.max(a[3],b[3]),b[4],lateral,R,i-1]);
+        maxD=Math.max(maxD,-fy(b[1])*P.yMul); maxHW=Math.max(maxHW,Math.abs(fx(b[0],b[1]))*P.xMul); }
     });
     P.segs.sort((x,y)=>x[4]-y[4]);
     P.endDay=(P.data&&P.data.endTime)||40;
@@ -978,16 +989,42 @@ async function runSim(){
       arr.forEach((d,i)=>{ d.eatable=i<quota; }); }
     P.layer=document.createElement("canvas"); P.layer.width=PW; P.layer.height=H;
     P.l=P.layer.getContext("2d"); P.l.lineCap="round"; P.l.lineJoin="round";
-    P.l.strokeStyle=rootStroke(P.l,soilY,H);
-    P.l.globalAlpha=P.airy?0.62:0.88;               // slightly see-through so dense root shows texture; Airy lighter still
+    P.pale=rootStroke(P.l,soilY,H);
+    P.mainA=P.airy?0.8:1; P.latA=P.airy?0.3:0.42;   // Airy = lighter, air-filled look
     P.idx=0; P.sparks=[];
   });
 
-  const grab=Math.max(9,sc*3.2), tintR=Math.max(20,sc*9);
+  const grab=Math.max(9,sc*3.2);
   const endDay=Math.max(...panels.map(P=>P.endDay));
   let day=0, swept=false, sweepEnd=0, done=false;
   const t0=performance.now(), DUR=14000;            // 40 simulated days over 14 s
   cancelAnimationFrame(animId);
+  function segWidth(P,s){ return s[6] ? Math.max(0.9, s[5]*2*sc*1.4*P.thickMul)
+                                      : Math.max(2.2, Math.min(12, s[5]*2*sc*2.2*P.thickMul)); }
+  function drawSeg(P,s,x2,y2){
+    const l=P.l, w=segWidth(P,s), x1=P.PX(s[0]), y1=P.PY(s[1]);
+    l.globalCompositeOperation="source-over";
+    if(!s[6]){                                   // main root: dark edge first, so neighbours stay separate
+      l.globalAlpha=0.7*P.mainA; l.strokeStyle="#5a3d24"; l.lineWidth=w+2.2;
+      l.beginPath(); l.moveTo(x1,y1); l.lineTo(x2,y2); l.stroke();
+      l.globalAlpha=P.mainA;
+    } else l.globalAlpha=P.latA;                 // lateral: faint, thin
+    l.strokeStyle=P.pale; l.lineWidth=w;
+    l.beginPath(); l.moveTo(x1,y1); l.lineTo(x2,y2); l.stroke();
+  }
+  /* water flows from where it was taken up toward the plant, so the colour runs UP the root and
+     fades out: a gradient along the root, painted only onto root pixels */
+  function drinkAlong(P,s,type,sc){
+    const l=P.l, ids=P.byRoot[s[7]], k=s[8], span=Math.min(k+1, s[6]?14:46);
+    l.globalCompositeOperation="source-atop";
+    for(let j=0;j<span;j++){
+      const q=P.segs[ids[k-j]], f=1-j/span;
+      l.globalAlpha=0.95*f*f+0.05; l.strokeStyle=`rgb(${TINT[type]})`; l.lineWidth=segWidth(P,q)+1.6;
+      l.beginPath(); l.moveTo(P.PX(q[0]),P.PY(q[1])); l.lineTo(P.PX(q[2]),P.PY(q[3])); l.stroke();
+    }
+    l.globalAlpha=1; l.globalCompositeOperation="source-over";
+    tintRoot(l,P.PX(s[2]),P.PY(s[3]),type,Math.max(14,sc*5));   // bright spot right where it drank
+  }
   function drawPanel(P,t){
     ctx.drawImage(soilImg,P.xo,0);
     ctx.save(); ctx.translate(P.xo,0);
@@ -1009,11 +1046,10 @@ async function runSim(){
     panels.forEach(P=>{
       while(P.idx<P.segs.length && P.segs[P.idx][4]<=day){
         const s=P.segs[P.idx++], x2=P.PX(s[2]), y2=P.PY(s[3]);
-        P.l.lineWidth=Math.max(1.3, Math.min(12, s[5]*2*sc*1.7*P.thickMul));
-        P.l.beginPath(); P.l.moveTo(P.PX(s[0]),P.PY(s[1])); P.l.lineTo(x2,y2); P.l.stroke();
+        drawSeg(P,s,x2,y2);
         for(const d of P.dots){ if(d.gone||!d.eatable) continue;   // the growing tip drinks what it touches
           if(Math.abs(d.x-x2)<grab && Math.abs(d.y-y2)<grab){ d.gone=true;
-            P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); tintRoot(P.l,d.x,d.y,d.type,tintR); } }
+            P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); drinkAlong(P,s,d.type,sc); } }
       }
     });
     panels.forEach(P=>drawPanel(P,t));
@@ -1026,7 +1062,10 @@ async function runSim(){
       // the finished roots sweep up everything they were able to reach, one sparkle at a time
       swept=true; let k=0;
       panels.forEach(P=>{ for(const d of P.dots){ if(d.gone||!d.eatable) continue; d.gone=true;
-        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+(k++)*40}); tintRoot(P.l,d.x,d.y,d.type,tintR); } });
+        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+(k++)*40});
+        // colour the nearest root segment as if it reached over and drank
+        let best=null, bq=Infinity; for(const s of P.segs){ const dx=P.PX(s[2])-d.x, dy=P.PY(s[3])-d.y, q=dx*dx+dy*dy; if(q<bq){ bq=q; best=s; } }
+        if(best) drinkAlong(P,best,d.type,sc); } });
       sweepEnd=t+k*40+600;
       document.getElementById("simTitle").textContent="Day 40 — the roots are drinking and eating…";
       animId=requestAnimationFrame(frame);

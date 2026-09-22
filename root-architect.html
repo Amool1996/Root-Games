@@ -52,7 +52,12 @@
   #s_intro { background:linear-gradient(#0b1533,#1a2c5e 40%,#2a1c10 41%,#120c06); justify-content:flex-start; padding-top:14px; gap:10px; overflow-y:auto; }
   #introScene { width:min(96vw,720px); aspect-ratio:400/250; border-radius:18px; overflow:hidden; flex-shrink:0;
     box-shadow:0 10px 30px rgba(0,0,0,.55); background:#0a1428; }
-  #introScene svg { width:100%; height:100%; display:block; }
+  #introScene { position:relative; }
+  /* two stacked layers so scenes cross-fade into each other instead of cutting */
+  #introScene .layer { position:absolute; inset:0; opacity:0; transition:opacity .75s ease; }
+  #introScene .layer.on { opacity:1; }
+  #introScene svg { width:100%; height:100%; display:block; animation:kenburns 13s ease-out both; }
+  @keyframes kenburns { 0%{transform:scale(1.07)} 100%{transform:scale(1)} }
   #introCap { width:min(96vw,720px); background:rgba(255,255,255,.95); color:#2a2a2a; border-radius:16px; flex-shrink:0;
     padding:12px 18px; font-size:min(4vw,24px); line-height:1.35; min-height:2.6em; text-align:center; font-weight:600;
     animation:fadeUp .5s ease-out both; }
@@ -200,12 +205,9 @@
   <div id="introScene"></div>
   <div id="introCap"></div>
   <div id="introBar"><i id="introFill"></i></div>
-  <div id="introDots"></div>
   <div class="introBtns">
-    <button class="bigbtn" style="background:linear-gradient(#8a97a8,#5b6a7c);box-shadow:0 6px 0 #3c4b59" onclick="introStep(-1)">◀ Back</button>
     <button class="bigbtn" id="introVoiceBtn" style="background:linear-gradient(#8a97a8,#5b6a7c);box-shadow:0 6px 0 #3c4b59" onclick="toggleVoice()">🔊 Voice</button>
-    <button class="bigbtn" id="introNextBtn" onclick="introStep(1)">Next ▶</button>
-    <button class="bigbtn" style="background:linear-gradient(#f5b942,#d19016);box-shadow:0 6px 0 #9c6c10" onclick="introEnd()">Skip ⏭</button>
+    <button class="bigbtn" style="background:linear-gradient(#f5b942,#d19016);box-shadow:0 6px 0 #9c6c10" onclick="introEnd()">Skip to the game ⏭</button>
   </div>
 </div>
 
@@ -1011,8 +1013,8 @@ const INTRO=[
 ];
 function artNested(key,x,y,s){ return WEATHER_ART[key].replace(/^<svg[^>]*>/, `<svg x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 0 100 100">`); }
 function rootPath(kind,x){
-  const tan="#dccb9f";
-  const seg=(d,w,delay)=>`<path class="grow" d="${d}" stroke="${tan}" stroke-width="${w}" fill="none" `+
+  const tan="url(#gRoot)";
+  const seg=(d,w,delay)=>`<path class="grow" d="${d}" stroke="${tan}" stroke-width="${w}" fill="none" filter="url(#fSoft)" `+
     `stroke-linecap="round"${delay?` style="animation-delay:${delay}s"`:""}/>`;
   let s="";
   if(kind==="deep"){
@@ -1056,7 +1058,7 @@ function rooty(x,y,s,o={}){
   }
   g+=`<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 0" dur="1.2s" repeatCount="indefinite"/>`;
   if(o.wave) g+=`<path d="M52 44 C60 40 66 34 70 24" stroke="#e6d7b0" stroke-width="7" stroke-linecap="round" fill="none"><animateTransform attributeName="transform" type="rotate" values="0 52 44;-35 52 44;0 52 44" dur=".6s" repeatCount="indefinite"/></path>`;
-  g+=`<path d="M32 16 C50 16 56 30 54 48 C52 63 45 72 38 90 C31 72 24 63 22 48 C20 30 26 16 32 16Z" fill="#e6d7b0" stroke="#b39a6a" stroke-width="1.8"/>`;
+  g+=`<path d="M32 16 C50 16 56 30 54 48 C52 63 45 72 38 90 C31 72 24 63 22 48 C20 30 26 16 32 16Z" fill="url(#gRoot)" stroke="#a88a52" stroke-width="1.8" filter="url(#fSoft)"/>`;
   g+=`<g stroke="#b39a6a" stroke-width="1.3" stroke-linecap="round"><path d="M24 58l-7 3"/><path d="M52 60l7 4"/><path d="M28 70l-6 4"/><path d="M48 74l6 3"/><path d="M38 90v6"/></g>`;
   g+=`<ellipse cx="31" cy="36" rx="4.4" ry="4.8" fill="#fff"/><ellipse cx="44" cy="36" rx="4.4" ry="4.8" fill="#fff"/>`;
   const blink=`<animate attributeName="r" values="2.4;2.4;0.2;2.4;2.4" keyTimes="0;.88;.92;.96;1" dur="3.6s" repeatCount="indefinite"/>`;
@@ -1068,135 +1070,194 @@ function rooty(x,y,s,o={}){
   else g+=`<path d="M31 49 Q38 56 45 49" fill="none" stroke="#7a3b2e" stroke-width="2.2" stroke-linecap="round"/>`;
   return g+`</g></g>`;
 }
+/* ---------- film stage: shared, properly shaded pieces every scene is built from ---------- */
+function stageDefs(){
+  return `<defs>
+    <linearGradient id="gSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f9fdc"/><stop offset=".55" stop-color="#8fd2f0"/><stop offset="1" stop-color="#d9f1fb"/></linearGradient>
+    <linearGradient id="gSoil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a5744a"/><stop offset=".3" stop-color="#7d5532"/>
+      <stop offset=".7" stop-color="#553a20"/><stop offset="1" stop-color="#2f1f0f"/></linearGradient>
+    <linearGradient id="gRoot" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fbf0d6"/><stop offset=".45" stop-color="#e7cd9c"/><stop offset="1" stop-color="#bb945a"/></linearGradient>
+    <linearGradient id="gLeaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93e06a"/><stop offset=".55" stop-color="#57b93f"/><stop offset="1" stop-color="#2c8330"/></linearGradient>
+    <linearGradient id="gStem" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f7a2c"/><stop offset=".4" stop-color="#5eb14a"/><stop offset="1" stop-color="#2a6d28"/></linearGradient>
+    <radialGradient id="gSun" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff9d4"/><stop offset=".45" stop-color="#ffeba1" stop-opacity=".75"/>
+      <stop offset="1" stop-color="#ffeba1" stop-opacity="0"/></radialGradient>
+    <filter id="fSoft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#000" flood-opacity=".33"/></filter>
+    <filter id="fGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="imag"><circle cx="278" cy="152" r="76"/></clipPath>
+  </defs>`;
+}
+function cloud(x,y,s,dur,delay){
+  return `<g opacity=".92" transform="translate(${x},${y}) scale(${s})" filter="url(#fSoft)">
+    <animateTransform attributeName="transform" type="translate" additive="sum"
+      from="0 0" to="470 0" dur="${dur}s" begin="${delay}s" repeatCount="indefinite"/>
+    <ellipse cx="0" cy="0" rx="22" ry="12" fill="#fff"/><ellipse cx="17" cy="4" rx="17" ry="10" fill="#fff"/>
+    <ellipse cx="-16" cy="4" rx="15" ry="9" fill="#fff"/><ellipse cx="4" cy="-8" rx="13" ry="10" fill="#f7fdff"/></g>`;
+}
+function skyLayer(sky){
+  let s=`<rect width="400" height="250" fill="${sky||'url(#gSky)'}"/>`;
+  s+=`<circle cx="52" cy="18" r="46" fill="url(#gSun)"/>`;
+  s+=`<circle cx="52" cy="18" r="15" fill="#fff3ae" filter="url(#fGlow)"/>`;
+  s+=cloud(-60,26,1,26,0)+cloud(-190,14,.72,34,4)+cloud(-320,40,.55,42,9);
+  return s;
+}
+function soilLayer(){
+  let seed=11; const r=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+  let s=`<rect y="70" width="400" height="180" fill="url(#gSoil)"/>`;
+  s+=`<rect y="70" width="400" height="7" fill="#4e9c34"/>`;
+  s+=`<path d="M0 77 h400" stroke="#2f6b20" stroke-width="2" opacity=".5"/>`;
+  let blades=`<g stroke="#4e9c34" stroke-width="2.4" stroke-linecap="round" fill="none">`;
+  for(let i=0;i<26;i++){ const x=(i*16+4).toFixed(0); blades+=`<path d="M${x} 71 l${(i%2?3:-3)} -7"/>`; }
+  s+=blades+`</g>`;
+  s+=`<g opacity=".13" fill="#000">`;            // grain
+  for(let i=0;i<90;i++) s+=`<circle cx="${(r()*400).toFixed(1)}" cy="${(80+r()*166).toFixed(1)}" r="${(0.9+r()*2).toFixed(1)}"/>`;
+  s+=`</g><g opacity=".5">`;                      // stones
+  for(let i=0;i<9;i++){ const x=(r()*390).toFixed(1), y=(96+r()*146).toFixed(1), w=(4+r()*6).toFixed(1);
+    s+=`<ellipse cx="${x}" cy="${y}" rx="${w}" ry="${(w*0.7).toFixed(1)}" fill="#6a5238"/>`+
+       `<ellipse cx="${x}" cy="${(+y-1).toFixed(1)}" rx="${(w*0.6).toFixed(1)}" ry="${(w*0.35).toFixed(1)}" fill="#8a6d4a" opacity=".8"/>`; }
+  s+=`</g>`;
+  return s;
+}
+/* a real corn plant: tapered stem, six arching shaded leaves */
+function cornPlant(x,y,s,sway){
+  const L=[[-1,56,-8],[1,62,-17],[-1,68,-26],[1,64,-35],[-1,52,-43],[1,42,-50]];
+  let g=`<g transform="translate(${x},${y})">`;
+  if(sway) g+=`<animateTransform attributeName="transform" type="rotate" additive="sum"
+      values="0 0 0;2.6 0 0;0 0 0;-2.6 0 0;0 0 0" dur="4.5s" repeatCount="indefinite"/>`;
+  g+=`<g transform="scale(${s})" filter="url(#fSoft)">`;
+  g+=`<ellipse cx="0" cy="0" rx="9" ry="3.4" fill="#3d2a17" opacity=".45"/>`;
+  g+=`<path d="M-3.4 0 L-2 -54 L2 -54 L3.4 0 Z" fill="url(#gStem)"/>`;
+  [-14,-28,-42].forEach(ny=>{ g+=`<path d="M-3 ${ny} h6" stroke="#2a6d28" stroke-width="1.4" opacity=".7"/>`; });
+  L.forEach(([d,len,ly])=>{
+    const tx=(d*len).toFixed(1), ty=ly+7;
+    g+=`<path d="M0 ${ly} C${(d*len*0.32).toFixed(1)} ${ly-21} ${(d*len*0.74).toFixed(1)} ${ly-17} ${tx} ${ty}`+
+       ` C${(d*len*0.7).toFixed(1)} ${ly-6} ${(d*len*0.3).toFixed(1)} ${ly+5} 0 ${ly+3} Z" fill="url(#gLeaf)"/>`;
+    g+=`<path d="M0 ${ly} C${(d*len*0.4).toFixed(1)} ${ly-15} ${(d*len*0.75).toFixed(1)} ${ly-11} ${tx} ${ty}"`+
+       ` stroke="#2c7a2a" stroke-width="1" fill="none" opacity=".45"/>`;
+  });
+  return g+`</g></g>`;
+}
 function label(x,y,w,txt,size){
-  return `<rect x="${x-w/2}" y="${y}" width="${w}" height="${(size||12)+10}" rx="${((size||12)+10)/2}" fill="#fff" opacity=".93"/>`+
-         `<text x="${x}" y="${y+(size||12)+1}" text-anchor="middle" font-size="${size||12}" font-weight="bold" fill="#1b2a44" font-family="Segoe UI,Arial">${txt}</text>`;
+  const fs=size||12;
+  return `<g filter="url(#fSoft)"><rect x="${x-w/2}" y="${y}" width="${w}" height="${fs+12}" rx="${(fs+12)/2}" fill="#fff" opacity=".96"/>`+
+         `<text x="${x}" y="${y+fs+2}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="#1b2a44" font-family="Segoe UI,Arial">${txt}</text></g>`;
 }
 function buildScene(sc){
-  let s=`<svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>
-    <linearGradient id="isoil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a6a42"/><stop offset="1" stop-color="#3d2a17"/></linearGradient>
-    <radialGradient id="isun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff7cf"/><stop offset="1" stop-color="#fff7cf" stop-opacity="0"/></radialGradient>
-    <clipPath id="imag"><circle cx="278" cy="152" r="76"/></clipPath></defs>`;
+  let s=`<svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`+stageDefs();
   const colors={water:"#2f9fe0",N:"#3fae63",P:"#e6892a"};
   let seed=7; const rnd=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
-  const dot=(type,x,y,cls,delay)=>`<circle class="${cls||''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.5" fill="${colors[type]}" stroke="#fff" stroke-width="1.2" style="transform-origin:${x.toFixed(1)}px ${y.toFixed(1)}px${delay?';animation-delay:'+delay.toFixed(2)+'s':''}"/>`;
-  const depthLabels=`<text x="6" y="92" font-size="10" fill="#fff" opacity=".7" font-family="Arial">TOP</text><text x="6" y="238" font-size="10" fill="#fff" opacity=".7" font-family="Arial">DEEP</text>`;
-  /* little speckles so the soil reads as soil and not as brown paint */
-  const grit=(n)=>{ let g=`<g fill="#000" opacity=".16">`;
-    for(let i=0;i<n;i++) g+=`<circle cx="${(rnd()*400).toFixed(1)}" cy="${(74+rnd()*172).toFixed(1)}" r="${(1+rnd()*2).toFixed(1)}"/>`;
-    return g+`</g>`; };
+  const dot=(type,x,y,cls,delay)=>`<circle class="${cls||''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.8" fill="${colors[type]}" stroke="#fff" stroke-width="1.4" filter="url(#fSoft)" style="transform-origin:${x.toFixed(1)}px ${y.toFixed(1)}px${delay?';animation-delay:'+delay.toFixed(2)+'s':''}"/>`;
+  const depthLabels=`<text x="6" y="94" font-size="10" fill="#fff" opacity=".75" font-family="Arial">TOP</text><text x="6" y="240" font-size="10" fill="#fff" opacity=".75" font-family="Arial">DEEP</text>`;
 
   if(sc.type==="final"){
-    s+=`<rect width="400" height="250" fill="#8ec9ec"/><rect y="150" width="400" height="100" fill="url(#isoil)"/>`;
+    s+=skyLayer()+`<rect y="150" width="400" height="100" fill="url(#gSoil)"/><rect y="150" width="400" height="6" fill="#4e9c34"/>`;
     const items=[["Perfect","Any root!"],["Drought","Go DEEP"],["LowN","Go DEEP"],["LowP","Go FUZZY"]];
     items.forEach((it,i)=>{ const x=22+i*96;
-      s+=artNested(it[0],x,28,74);
-      s+=label(x+37,108,86,it[1],15);
+      s+=`<g filter="url(#fSoft)">`+artNested(it[0],x,26,74)+`</g>`;
+      s+=label(x+37,106,86,it[1],15);
     });
-    s+=`<text x="200" y="205" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" font-family="Segoe UI,Arial" stroke="#3d2b15" stroke-width="1">Match your root to the weather!</text>`;
+    s+=`<text x="200" y="202" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" font-family="Segoe UI,Arial" stroke="#3d2b15" stroke-width="1">Match your root to the weather!</text>`;
     s+=`<text x="200" y="236" text-anchor="middle" font-size="30" class="badge">🏆 🌱 🏆</text>`;
     return s+`</svg>`;
   }
 
-  s+=`<rect width="400" height="250" fill="${sc.sky}"/>`;
-  s+=`<circle cx="60" cy="24" r="52" fill="url(#isun)"/>`;
-  s+=`<rect y="70" width="400" height="180" fill="url(#isoil)"/>`;
-  s+=`<rect y="70" width="400" height="6" fill="#4b9433"/>`;
-  s+=grit(70);
-  if(sc.art) s+=artNested(sc.art,334,4,62);
+  s+=skyLayer(sc.sky)+soilLayer();
+  if(sc.art) s+=`<g filter="url(#fSoft)">`+artNested(sc.art,330,6,64)+`</g>`;
 
   if(sc.type==="hello"){
-    s+=rootPath("deep",300)+sproutSVG(300)+rooty(80,78,1.3,{wave:true});
-    s+=`<text x="255" y="150" font-size="28" class="badge" style="transform-origin:255px 150px">👋</text>`;
+    s+=rootPath("deep",300)+cornPlant(300,70,1,true)+rooty(70,84,1.35,{wave:true});
+    s+=`<text x="250" y="150" font-size="28" class="badge" style="transform-origin:250px 150px">👋</text>`;
     return s+`</svg>`;
   }
   if(sc.type==="half"){
-    s+=rootPath("deep",170);
-    s+=`<g transform="translate(170,72) scale(1.9)">${sproutLocal()}</g>`;
-    s+=`<path d="M250 40 H392" stroke="#fff" stroke-width="2" stroke-dasharray="6 5" opacity=".9"/>`;
-    s+=label(320,16,150,"You can SEE this",13);
-    s+=`<path d="M250 160 H392" stroke="#fff" stroke-width="2" stroke-dasharray="6 5" opacity=".9"/>`;
-    s+=label(320,168,150,"This half is HIDDEN",13);
-    s+=rooty(36,132,0.8,{});
+    s+=rootPath("deep",168)+cornPlant(168,70,1.25,true);
+    s+=`<path d="M248 38 H392" stroke="#fff" stroke-width="2.5" stroke-dasharray="7 5" opacity=".95"/>`;
+    s+=label(320,14,152,"You can SEE this",13);
+    s+=`<path d="M248 162 H392" stroke="#fff" stroke-width="2.5" stroke-dasharray="7 5" opacity=".95"/>`;
+    s+=label(320,170,152,"This half is HIDDEN",13);
+    s+=rooty(30,134,0.8,{});
     return s+`</svg>`;
   }
   if(sc.type==="anchor"){
-    /* wind gusts blow across, the leaves lean with them, the roots hold firm */
-    let w=`<g stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6">`;
+    let w=`<g stroke="#fff" stroke-width="3.4" fill="none" stroke-linecap="round" opacity=".7">`;
     for(let i=0;i<4;i++) w+=`<path d="M0 ${16+i*13} q22 -7 44 0 q22 7 44 0"><animateTransform attributeName="transform" type="translate" from="-120 0" to="450 0" dur="2.6s" begin="${(i*0.6).toFixed(1)}s" repeatCount="indefinite"/></path>`;
     s+=w+`</g>`;
-    s+=rootPath("deep",200);
-    s+=`<g><animateTransform attributeName="transform" type="rotate" values="0 200 72;5 200 72;0 200 72;-3 200 72;0 200 72" dur="3.2s" repeatCount="indefinite"/>`+
-       `<g transform="translate(200,72) scale(1.8)">${sproutLocal()}</g></g>`;
-    s+=`<text x="60" y="118" font-size="30" class="badge" style="transform-origin:60px 118px">💨</text>`;
-    s+=label(200,196,150,"Roots HOLD ON!",14);
-    s+=rooty(310,140,0.8,{});
+    s+=rootPath("deep",200)+cornPlant(200,70,1.25,true);
+    s+=`<text x="52" y="120" font-size="30" class="badge" style="transform-origin:52px 120px">💨</text>`;
+    s+=label(200,196,152,"Roots HOLD ON!",14);
+    s+=rooty(312,142,0.78,{});
     return s+`</svg>`;
   }
   if(sc.type==="drink"){
-    s+=depthLabels+sproutSVG(120);
-    for(let i=0;i<10;i++) s+=dot("water",215+rnd()*165,150+rnd()*85,"eat",1.2+i*0.3);
-    s+=rooty(60,72,1.5,{straw:true});
+    s+=depthLabels+rootPath("deep",128)+cornPlant(128,70,0.9,true);
+    for(let i=0;i<10;i++) s+=dot("water",222+rnd()*158,150+rnd()*84,"eat",1.2+i*0.3);
+    s+=rooty(46,80,1.5,{straw:true});
     return s+`</svg>`;
   }
   if(sc.type==="eat"){
-    s+=sproutSVG(200);
-    for(let i=0;i<8;i++) s+=dot("N",40+rnd()*120,100+rnd()*130,"eat",0.8+i*0.35);
-    for(let i=0;i<8;i++) s+=dot("P",255+rnd()*115,85+rnd()*60,"eat",1.0+i*0.35);
-    s+=rooty(140,72,1.4,{munch:true});
-    s+=`<text x="215" y="125" font-size="24" class="sprk" style="transform-origin:215px 125px">😋</text>`;
+    s+=rootPath("deep",206)+cornPlant(206,70,0.95,true);
+    for(let i=0;i<8;i++) s+=dot("N",34+rnd()*112,104+rnd()*126,"eat",0.8+i*0.35);
+    for(let i=0;i<8;i++) s+=dot("P",258+rnd()*112,88+rnd()*58,"eat",1.0+i*0.35);
+    s+=rooty(126,82,1.35,{munch:true});
+    s+=`<text x="214" y="128" font-size="24" class="sprk" style="transform-origin:214px 128px">😋</text>`;
     return s+`</svg>`;
   }
   if(sc.type==="hairs"){
-    /* a magnifying glass over one root, showing the hairs that are too small to see */
-    s+=rootPath("deep",96)+sproutSVG(96);
-    s+=`<circle cx="98" cy="150" r="17" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 4"/>`;
-    s+=`<line x1="222" y1="208" x2="150" y2="243" stroke="#e9e9e9" stroke-width="13" stroke-linecap="round"/>`;
-    s+=`<circle cx="278" cy="152" r="76" fill="#efdcb4"/>`;
+    s+=rootPath("deep",92)+cornPlant(92,70,0.85,true);
+    s+=`<circle cx="88" cy="150" r="17" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+    s+=`<g filter="url(#fSoft)"><line x1="222" y1="208" x2="150" y2="243" stroke="#eceff2" stroke-width="14" stroke-linecap="round"/>`;
+    s+=`<circle cx="278" cy="152" r="76" fill="#f3e3bd"/></g>`;
     s+=`<g clip-path="url(#imag)">`;
-    s+=`<path d="M278 68 V236" stroke="#d3b884" stroke-width="30" stroke-linecap="round"/>`;
-    s+=`<path d="M270 80 V228" stroke="#e4cfa2" stroke-width="7" stroke-linecap="round" opacity=".7"/>`;
+    s+=`<path d="M278 68 V236" stroke="url(#gRoot)" stroke-width="32" stroke-linecap="round"/>`;
+    s+=`<path d="M268 80 V228" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".45"/>`;
     for(let i=0;i<28;i++){ const y=80+i*5.6, sg=(i%2)?1:-1;
-      s+=`<line class="hair" x1="${278+sg*14}" y1="${y.toFixed(1)}" x2="${(278+sg*(32+(i%3)*8)).toFixed(1)}" y2="${(y+7).toFixed(1)}" stroke="#e8d3a2" stroke-width="2.3" stroke-linecap="round" style="animation-delay:${(0.5+i*0.07).toFixed(2)}s"/>`; }
+      s+=`<line class="hair" x1="${278+sg*15}" y1="${y.toFixed(1)}" x2="${(278+sg*(33+(i%3)*8)).toFixed(1)}" y2="${(y+7).toFixed(1)}" stroke="#e0c288" stroke-width="2.4" stroke-linecap="round" style="animation-delay:${(0.5+i*0.07).toFixed(2)}s"/>`; }
     for(let i=0;i<7;i++){ const y=92+i*20, sg=(i%2)?1:-1;
-      s+=dot(i%3===2?"N":"water", 278+sg*(46+(i%2)*8), y, "eat", 1.6+i*0.28); }
+      s+=dot(i%3===2?"N":"water", 278+sg*(48+(i%2)*8), y, "eat", 1.6+i*0.28); }
     s+=`</g>`;
-    s+=`<circle cx="278" cy="152" r="76" fill="none" stroke="#fff" stroke-width="8"/>`;
-    s+=`<circle cx="278" cy="152" r="70" fill="none" stroke="#bcdff2" stroke-width="3" opacity=".8"/>`;
-    s+=label(278,236,168,"Thousands of tiny hairs",13);
+    s+=`<circle cx="278" cy="152" r="76" fill="none" stroke="#fff" stroke-width="9"/>`;
+    s+=`<circle cx="278" cy="152" r="69" fill="none" stroke="#cfe9f7" stroke-width="3" opacity=".9"/>`;
+    s+=`<path d="M236 108 a76 76 0 0 1 34 -28" stroke="#fff" stroke-width="7" fill="none" opacity=".45" stroke-linecap="round"/>`;
+    s+=label(278,234,172,"Thousands of tiny hairs",13);
     return s+`</svg>`;
   }
   if(sc.type==="tip"){
-    /* only the tip grows: soil grains get nudged aside as it pushes down */
-    s+=`<path class="grow" d="M200 72 C193 118 207 158 200 196" stroke="#dccb9f" stroke-width="17" fill="none" stroke-linecap="round"/>`;
-    s+=`<path d="M186 196 q14 34 28 0 Z" fill="#c7ac78"/>`;
-    s+=`<ellipse cx="200" cy="200" rx="13" ry="9" fill="#e0cb98" opacity=".55"/>`;
-    for(let i=0;i<9;i++){ const sg=(i%2)?1:-1, y=120+i*13, r=2.5+rnd()*2.5;
-      s+=`<circle cx="${(200+sg*20).toFixed(1)}" cy="${y}" r="${r.toFixed(1)}" fill="#6b4a2a" opacity=".85">`+
-         `<animate attributeName="cx" values="${(200+sg*14).toFixed(1)};${(200+sg*34).toFixed(1)}" dur="2.4s" begin="${(i*0.2).toFixed(2)}s" repeatCount="indefinite"/>`+
-         `<animate attributeName="opacity" values=".9;.2" dur="2.4s" begin="${(i*0.2).toFixed(2)}s" repeatCount="indefinite"/></circle>`; }
-    for(let i=0;i<3;i++) s+=`<text x="194" y="214" font-size="17" fill="#ffe14d" font-family="Arial">▼<animate attributeName="y" values="212;240" dur="1.8s" begin="${(i*0.6).toFixed(1)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="1.8s" begin="${(i*0.6).toFixed(1)}s" repeatCount="indefinite"/></text>`;
-    s+=`<g transform="translate(200,72) scale(1.3)">${sproutLocal()}</g>`;
-    s+=label(96,150,150,"Only the TIP grows",13);
-    s+=rooty(310,120,0.8,{});
+    s+=`<path class="grow" d="M200 72 C193 118 207 158 200 196" stroke="url(#gRoot)" stroke-width="18" fill="none" stroke-linecap="round" filter="url(#fSoft)"/>`;
+    s+=`<path d="M185 194 q15 36 30 0 Z" fill="#cbae79"/>`;
+    s+=`<ellipse cx="200" cy="198" rx="14" ry="9" fill="#fff" opacity=".3"/>`;
+    for(let i=0;i<9;i++){ const sg=(i%2)?1:-1, y=120+i*13, r=2.6+rnd()*2.6;
+      s+=`<circle cx="${(200+sg*20).toFixed(1)}" cy="${y}" r="${r.toFixed(1)}" fill="#6b4a2a">`+
+         `<animate attributeName="cx" values="${(200+sg*14).toFixed(1)};${(200+sg*36).toFixed(1)}" dur="2.4s" begin="${(i*0.2).toFixed(2)}s" repeatCount="indefinite"/>`+
+         `<animate attributeName="opacity" values=".95;.15" dur="2.4s" begin="${(i*0.2).toFixed(2)}s" repeatCount="indefinite"/></circle>`; }
+    for(let i=0;i<3;i++) s+=`<text x="193" y="214" font-size="18" fill="#ffe14d" font-family="Arial" filter="url(#fGlow)">▼<animate attributeName="y" values="212;242" dur="1.8s" begin="${(i*0.6).toFixed(1)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="1.8s" begin="${(i*0.6).toFixed(1)}s" repeatCount="indefinite"/></text>`;
+    s+=cornPlant(200,70,0.8,true);
+    s+=label(92,152,150,"Only the TIP grows",13);
+    s+=rooty(310,122,0.78,{});
     return s+`</svg>`;
   }
   if(sc.type==="grow"){
     s+=rootPath("deep",200);
-    /* water and food actually ride up the root into the leaves */
-    s+=`<path id="upline" d="M200 232 C194 192 206 142 200 104 L200 56" fill="none" stroke="none"/>`;
+    s+=`<path id="upline" d="M200 232 C194 192 206 142 200 104 L200 52" fill="none" stroke="none"/>`;
     for(let i=0;i<6;i++){ const c=(i%2)?"#3fae63":"#54bdf5", b=(i*0.62).toFixed(2);
-      s+=`<circle r="5.2" fill="${c}" stroke="#fff" stroke-width="1.2">`+
+      s+=`<circle r="5.6" fill="${c}" stroke="#fff" stroke-width="1.4" filter="url(#fSoft)">`+
          `<animateMotion dur="3.6s" begin="${b}s" repeatCount="indefinite"><mpath xlink:href="#upline" href="#upline"/></animateMotion>`+
          `<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.12;.8;1" dur="3.6s" begin="${b}s" repeatCount="indefinite"/></circle>`; }
-    s+=`<g transform="translate(200,72)"><g><animateTransform attributeName="transform" type="scale" values="0.7;1.9" dur="6s" fill="freeze"/>${sproutLocal()}</g></g>`;
-    s+=`<text x="252" y="44" font-size="30" class="badge" style="transform-origin:252px 44px">🌽</text>`;
-    s+=rooty(316,132,0.8,{});
+    s+=`<g transform="translate(200,70)"><g><animateTransform attributeName="transform" type="scale" values="0.55;1.25" dur="6s" fill="freeze"/>`+
+       cornPlant(0,0,1,false)+`</g></g>`;
+    s+=`<text x="258" y="46" font-size="30" class="badge" style="transform-origin:258px 46px">🌽</text>`;
+    s+=rooty(318,134,0.78,{});
     return s+`</svg>`;
   }
   if(sc.type==="go"){
-    s+=rootPath("deep",320)+sproutSVG(320)+rooty(100,74,1.4,{wave:true});
-    s+=`<text x="245" y="150" font-size="34" class="badge" style="transform-origin:245px 150px">🚀</text><text x="262" y="105" font-size="30" class="badge" style="transform-origin:262px 105px;animation-delay:6.6s">🎡</text>`;
+    s+=rootPath("deep",316)+cornPlant(316,70,1.05,true)+rooty(88,82,1.4,{wave:true});
+    s+=`<text x="232" y="152" font-size="34" class="badge" style="transform-origin:232px 152px">🚀</text><text x="252" y="106" font-size="30" class="badge" style="transform-origin:252px 106px;animation-delay:6.6s">🎡</text>`;
     return s+`</svg>`;
   }
   // "compare": two roots race for the same resource
@@ -1209,10 +1270,10 @@ function buildScene(sc){
     }
   });
   sc.plants.forEach((p,i)=>{
-    s+=rootPath(p.kind,p.x)+sproutSVG(p.x);
-    s+=label(p.x,10,96,p.label,12);
+    s+=rootPath(p.kind,p.x)+cornPlant(p.x,70,0.6,true);
+    s+=label(p.x,4,100,p.label,12);
     const isWin=(i===sc.winner);
-    s+=`<text class="badge" x="${p.x+30}" y="60" text-anchor="middle" font-size="26" style="transform-origin:${p.x+30}px 52px">${isWin?"🏆":"😢"}</text>`;
+    s+=`<text class="badge" x="${p.x+50}" y="56" text-anchor="middle" font-size="26" style="transform-origin:${p.x+50}px 48px">${isWin?"🏆":"😢"}</text>`;
     if(isWin){ const ty=p.kind==="deep"?232:126;
       s+=`<text class="sprk" x="${p.x-22}" y="${ty}" font-size="18" style="transform-origin:${p.x-22}px ${ty}px">✨</text><text class="sprk" x="${p.x+10}" y="${ty-14}" font-size="18" style="transform-origin:${p.x+10}px ${ty-14}px">✨</text>`; }
   });
@@ -1270,7 +1331,9 @@ function narrateScene(sc, onDone){
     let a; try{ a=new Audio("ra-data/voice/"+sc.id+".mp3"); }catch(e){ a=null; }
     if(a){
       narrAudio=a;
-      const fallback=()=>{ voiceFiles=false;          // no recordings here — stop looking for them
+      let fellBack=false;   // a missing file fires BOTH onerror and the play() rejection —
+      const fallback=()=>{ if(fellBack) return; fellBack=true;   // without this guard it narrates twice
+        voiceFiles=false;                                        // no recordings here — stop looking
         if(mine!==narrSeq) return; narrAudio=null; speakLines(sc.say,onDone); };
       a.onended=()=>{ if(mine===narrSeq){ narrAudio=null; if(onDone) onDone(true); } };
       a.onplaying=()=>{ voiceFiles=true; };
@@ -1287,27 +1350,43 @@ function sceneDur(sc){
   const words=lines.join(" ").split(/\s+/).filter(Boolean).length;
   return Math.max(6500, Math.min(22000, words*430 + lines.length*NARR_GAP + 1500));
 }
+/* the story plays as one continuous film: scenes cross-fade, the bar runs end to end,
+   and when the last line is spoken it rolls straight into the game. */
+let introLayerTop=false;
+function showScene(sc){
+  const host=document.getElementById("introScene");
+  if(host.querySelectorAll(".layer").length!==2) host.innerHTML='<div class="layer"></div><div class="layer"></div>';
+  const L=host.querySelectorAll(".layer");
+  const cur=L[introLayerTop?1:0], nxt=L[introLayerTop?0:1];
+  nxt.innerHTML=buildScene(sc);
+  void nxt.offsetWidth;                       // restart the ken-burns drift
+  nxt.classList.add("on"); cur.classList.remove("on");
+  introLayerTop=!introLayerTop;
+}
+function introTotal(){ return INTRO.reduce((a,s)=>a+sceneDur(s),0); }
 function introRender(){
   clearTimeout(introTimer); stopNarration();
   const sc=INTRO[introIdx];
-  document.getElementById("introScene").innerHTML=buildScene(sc);
-  const cap=document.getElementById("introCap"); cap.style.animation="none"; void cap.offsetWidth; cap.style.animation=""; cap.textContent=sc.cap;
-  document.getElementById("introDots").innerHTML=INTRO.map((_,i)=>`<span class="${i===introIdx?'on':''}"></span>`).join("");
-  const nb=document.getElementById("introNextBtn");
-  nb.textContent = sc.final ? "PLAY ▶" : "Next ▶";
-  nb.onclick = sc.final ? introEnd : ()=>introStep(1);
-  const dur=sceneDur(sc);
-  const f=document.getElementById("introFill"); f.style.transition="none"; f.style.width="0";
-  if(sc.final){ f.style.width="100%"; }
-  else requestAnimationFrame(()=>{ f.style.transition=`width ${dur}ms linear`; f.style.width="100%"; });
+  showScene(sc);
+  const cap=document.getElementById("introCap");
+  cap.style.animation="none"; void cap.offsetWidth; cap.style.animation=""; cap.textContent=sc.cap;
+  // one bar for the whole film, not one per page
+  const total=introTotal(), dur=sceneDur(sc);
+  let before=0; for(let i=0;i<introIdx;i++) before+=sceneDur(INTRO[i]);
+  const f=document.getElementById("introFill");
+  f.style.transition="none"; f.style.width=(100*before/total).toFixed(2)+"%";
+  requestAnimationFrame(()=>{ f.style.transition=`width ${dur}ms linear`;
+    f.style.width=(100*(before+dur)/total).toFixed(2)+"%"; });
   const at=introIdx;
-  const advance=()=>{ if(sc.final || introIdx!==at) return; introStep(1); };
-  // the page turns when the narrator finishes talking; the timer is only a safety net
-  narrateScene(sc, spoke=>{ if(spoke && introIdx===at && !sc.final){ clearTimeout(introTimer); introTimer=setTimeout(advance, 1100); } });
+  const advance=()=>{ if(introIdx!==at) return; if(sc.final) introEnd(); else introStep(1); };
+  narrateScene(sc, spoke=>{ if(spoke && introIdx===at){ clearTimeout(introTimer);
+    introTimer=setTimeout(advance, sc.final?1600:800); } });
   introTimer=setTimeout(advance, introVoice ? dur+6000 : dur);
 }
 function showIntro(){ introIdx=0; go("intro"); introRender(); }
-function introStep(d){ introIdx=Math.max(0,Math.min(INTRO.length-1,introIdx+d)); introRender(); }
+function introStep(d){ const n=introIdx+d;
+  if(n>=INTRO.length){ introEnd(); return; }
+  introIdx=Math.max(0,n); introRender(); }
 function introEnd(){ storySeen=true; clearTimeout(introTimer); stopNarration(); startRound(); }
 function toggleVoice(){ introVoice=!introVoice; document.getElementById("introVoiceBtn").textContent=introVoice?"🔊 Voice":"🔇 Voice";
   if(!introVoice) stopNarration(); else introRender(); }

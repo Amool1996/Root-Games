@@ -1,0 +1,7 @@
+# downloaded cluster bundles (already extracted into cluster/*_results/)
+*.tar.gz
+
+# local tooling / scratch
+.claude/
+Thumbs.db
+.DS_Store

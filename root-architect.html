@@ -194,7 +194,7 @@
     <div class="titleBtns">
       <div class="pulseWrap"><button class="bigbtn" onclick="startGame()">PLAY ▶</button></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-        <button class="bigbtn" style="background:linear-gradient(#5b9fd4,#31699a);box-shadow:0 6px 0 #23507a;font-size:min(4.5vw,24px);padding:10px 26px" onclick="showIntro()">📺 Watch the Story</button>
+        <button class="bigbtn" style="background:linear-gradient(#5b9fd4,#31699a);box-shadow:0 6px 0 #23507a;font-size:min(4.5vw,24px);padding:10px 26px" onclick="showIntro(true)">📺 Full Story (3 min)</button>
         <button class="bigbtn" style="background:linear-gradient(#f5b942,#d19016);box-shadow:0 6px 0 #9c6c10;font-size:min(4.5vw,24px);padding:10px 26px" onclick="showBoard()">🏆 Leaderboard</button>
       </div>
     </div>
@@ -962,13 +962,20 @@ function showBoard(){
 
 /* ================= intro story (animated explainer) ================= */
 let introIdx=0, introTimer=null, introVoice=true;
+/* The booth default is the SHORT cut (~80 s) so a queue keeps moving.
+   "Full Story" on the title screen plays all 13 pages with the longer narration. */
+let introFull=false, PLAY=[];
+function capOf(sc){ return (!introFull && sc.capS) ? sc.capS : sc.cap; }
+function sayOf(sc){ return (!introFull && sc.sayS) ? sc.sayS : sc.say; }
 let storySeen=false;
 function startGame(){ if(!storySeen) showIntro(); else startRound(); }
 /* Rooty's Story — a teacher reading to a class. One idea per page.
    `say` is a LIST of sentences so the narrator pauses between them like a real teacher,
    and the page only turns once she has finished speaking. */
 const INTRO=[
- {id:"p01", type:"hello", sky:"#8ec9ec", art:"Perfect",
+ {id:"p01", type:"hello", sky:"#8ec9ec", art:"Perfect", short:1,
+  capS:"Hi! I'm ROOTY 👋 — I'm a ROOT, and I live under the ground.",
+  sayS:["Hi! I am Rooty.","I am a root, and I live under the ground."],
   cap:"Hello, young scientists! I'm ROOTY 👋 — and I am a ROOT.",
   say:["Hello, young scientists!","My name is Rooty, and I am a root.","I live under the ground, where nobody can see me."]},
  {id:"p02", type:"half", sky:"#8ec9ec",
@@ -989,25 +996,35 @@ const INTRO=[
  {id:"p07", type:"tip", sky:"#8ec9ec",
   cap:"How do I grow? Only my TIP grows — pushing through the soil, a little more each day.",
   say:["How do I grow?","Only my very tip grows.","It pushes between the bits of soil, a little bit further every day.","In one month, I can grow deeper than you are tall."]},
- {id:"p08", type:"grow", sky:"#8ec9ec",
+ {id:"p08", type:"grow", sky:"#8ec9ec", short:1,
+  capS:"My job: DRINK 💧 and EAT 🟢🟠 from the soil, and send it UP to the leaves 🌽",
+  sayS:["My job is to drink water, and eat plant food from the soil.","I send it all up to the leaves.","That is how the plant grows big and strong."],
   cap:"Everything I drink and eat travels UP to the leaves — and the plant grows BIG 🌽",
   say:["Everything I drink, and everything I eat, travels up.","Up, up, up to the leaves.","And that is how the plant grows big and strong."]},
- {id:"p09", type:"compare", sky:"#ffb257", art:"Drought", dots:[["water",178,240,12]],
+ {id:"p09", type:"compare", sky:"#ffb257", art:"Drought", dots:[["water",178,240,12]], short:1,
+  capS:"☀️ DROUGHT! No rain — the water hides DEEP. The DEEP root wins!",
+  sayS:["When there is no rain, the water hides deep down.","Can you guess who wins? The deep root!"],
   plants:[{x:118,kind:"shallow",label:"Short root"},{x:282,kind:"deep",label:"Deep root"}], winner:1,
   cap:"☀️ DROUGHT! No rain. The water hides DEEP down. Only a DEEP root can reach it.",
   say:["But here is the tricky part.","Some summers, it hardly rains at all.","Can you guess where the water is hiding?","Deep down!","So in a dry year, the deep root wins."]},
- {id:"p10", type:"compare", sky:"#c9b0e0", art:"LowN", dots:[["N",170,240,12]],
+ {id:"p10", type:"compare", sky:"#c9b0e0", art:"LowN", dots:[["N",170,240,12]], short:1,
+  capS:"🍽️ HUNGRY SOIL! Nitrogen washes down deep. The DEEP root wins again!",
+  sayS:["When the soil runs out of nitrogen, the rain washes it down deep too.","So the deep root wins again."],
   plants:[{x:118,kind:"shallow",label:"Short root"},{x:282,kind:"deep",label:"Deep root"}], winner:1,
   cap:"🍽️ HUNGRY SOIL! Nitrogen washes downward with the rain. Deep roots catch it.",
   say:["Other years, the soil runs out of nitrogen.","Nitrogen is slippery.","Every time it rains, it washes down, deeper and deeper.","So once again, the deep root wins."]},
- {id:"p11", type:"compare", sky:"#cfd8de", art:"LowP", dots:[["P",78,110,12]],
+ {id:"p11", type:"compare", sky:"#cfd8de", art:"LowP", dots:[["P",78,110,12]], short:1,
+  capS:"🪨 ROCKY SOIL! Phosphorus STICKS at the top. Now the FUZZY root wins!",
+  sayS:["But phosphorus sticks near the top.","Digging deep will not help here.","This time the short fuzzy root wins!"],
   plants:[{x:118,kind:"fuzzy",label:"Fuzzy root"},{x:282,kind:"deep",label:"Deep root"}], winner:0,
   cap:"🪨 ROCKY SOIL! Phosphorus STICKS near the top. Now the FUZZY root wins!",
   say:["But phosphorus is different.","Phosphorus sticks to the soil, right near the top.","Digging deep will not help you here.","This time, the short fuzzy root, with all those tiny hairs, wins."]},
  {id:"p12", type:"final",
   cap:"So there is NO single best root. A clever root MATCHES the weather! 🌈☀️🍽️🪨",
   say:["So, young scientists, what did we learn?","There is no single best root.","The best root is the one that matches the weather.","And that is exactly what real scientists study."]},
- {id:"p13", type:"go", sky:"#8ec9ec", final:true,
+ {id:"p13", type:"go", sky:"#8ec9ec", final:true, short:1,
+  capS:"Now it's YOUR turn! Spin the wheel and grow the BIGGEST plant! 🚀",
+  sayS:["Now it is your turn.","Spin the weather wheel, and grow the biggest plant!"],
   cap:"Now it's YOUR turn! Spin the wheel, build me your way, and grow the BIGGEST plant! 🚀",
   say:["Now it is your turn.","Spin the weather wheel, and build me your way.","Let us grow the biggest plant in the whole field!"]}
 ];
@@ -1334,7 +1351,7 @@ function narrateScene(sc, onDone){
       let fellBack=false;   // a missing file fires BOTH onerror and the play() rejection —
       const fallback=()=>{ if(fellBack) return; fellBack=true;   // without this guard it narrates twice
         voiceFiles=false;                                        // no recordings here — stop looking
-        if(mine!==narrSeq) return; narrAudio=null; speakLines(sc.say,onDone); };
+        if(mine!==narrSeq) return; narrAudio=null; speakLines(sayOf(sc),onDone); };
       a.onended=()=>{ if(mine===narrSeq){ narrAudio=null; if(onDone) onDone(true); } };
       a.onplaying=()=>{ voiceFiles=true; };
       a.onerror=fallback;
@@ -1342,11 +1359,11 @@ function narrateScene(sc, onDone){
       return;
     }
   }
-  speakLines(sc.say, onDone);
+  speakLines(sayOf(sc), onDone);
 }
 /* roughly how long this page takes to read aloud — drives the progress bar */
 function sceneDur(sc){
-  const lines=sc.say||[];
+  const lines=sayOf(sc)||[];
   const words=lines.join(" ").split(/\s+/).filter(Boolean).length;
   return Math.max(6500, Math.min(22000, words*430 + lines.length*NARR_GAP + 1500));
 }
@@ -1363,16 +1380,16 @@ function showScene(sc){
   nxt.classList.add("on"); cur.classList.remove("on");
   introLayerTop=!introLayerTop;
 }
-function introTotal(){ return INTRO.reduce((a,s)=>a+sceneDur(s),0); }
+function introTotal(){ return PLAY.reduce((a,s)=>a+sceneDur(s),0); }
 function introRender(){
   clearTimeout(introTimer); stopNarration();
-  const sc=INTRO[introIdx];
+  const sc=PLAY[introIdx];
   showScene(sc);
   const cap=document.getElementById("introCap");
-  cap.style.animation="none"; void cap.offsetWidth; cap.style.animation=""; cap.textContent=sc.cap;
+  cap.style.animation="none"; void cap.offsetWidth; cap.style.animation=""; cap.textContent=capOf(sc);
   // one bar for the whole film, not one per page
   const total=introTotal(), dur=sceneDur(sc);
-  let before=0; for(let i=0;i<introIdx;i++) before+=sceneDur(INTRO[i]);
+  let before=0; for(let i=0;i<introIdx;i++) before+=sceneDur(PLAY[i]);
   const f=document.getElementById("introFill");
   f.style.transition="none"; f.style.width=(100*before/total).toFixed(2)+"%";
   requestAnimationFrame(()=>{ f.style.transition=`width ${dur}ms linear`;
@@ -1383,9 +1400,16 @@ function introRender(){
     introTimer=setTimeout(advance, sc.final?1600:800); } });
   introTimer=setTimeout(advance, introVoice ? dur+6000 : dur);
 }
-function showIntro(){ introIdx=0; go("intro"); introRender(); }
+function showIntro(full){
+  introFull=!!full;
+  PLAY = introFull ? INTRO : INTRO.filter(s=>s.short);
+  if(!PLAY.length) PLAY=INTRO;
+  INTRO.forEach(s=>{ s.final=false; });    // whichever page ends THIS cut is the one that
+  PLAY[PLAY.length-1].final=true;          // rolls into the game
+  introIdx=0; go("intro"); introRender();
+}
 function introStep(d){ const n=introIdx+d;
-  if(n>=INTRO.length){ introEnd(); return; }
+  if(n>=PLAY.length){ introEnd(); return; }
   introIdx=Math.max(0,n); introRender(); }
 function introEnd(){ storySeen=true; clearTimeout(introTimer); stopNarration(); startRound(); }
 function toggleVoice(){ introVoice=!introVoice; document.getElementById("introVoiceBtn").textContent=introVoice?"🔊 Voice":"🔇 Voice";

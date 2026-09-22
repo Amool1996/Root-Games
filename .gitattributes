@@ -1,0 +1,12 @@
+# keep cluster (Linux) files LF so they run on Hellbender after checkout on Windows
+*.sh text eol=lf
+*.py text eol=lf
+*.csv text eol=lf
+*.xml text eol=lf
+*.tab text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+*.js text eol=lf
+*.svg text eol=lf
+*.png binary

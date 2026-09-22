@@ -205,7 +205,7 @@
   <div id="titleOverlay">
     <div style="text-align:center">
       <h1 class="bigTitle">ROOT GAME</h1>
-      <p class="tagline">Design a corn root, test it in a <b>real supercomputer simulation</b>,<br>and build the champion root for your weather!</p>
+      <p class="tagline">Design a corn root, test it in a <b>real supercomputer simulation</b>,<br>and build the champion root for your field!</p>
     </div>
     <div class="titleBtns">
       <div class="pulseWrap"><button class="bigbtn" onclick="startGame()">PLAY ▶</button></div>
@@ -229,7 +229,7 @@
 
 <div class="screen" id="s_wheel">
   <div id="wheelBg"></div><div id="wheelChars"></div>
-  <h2>Spin for this year's weather!</h2>
+  <h2>Spin for this year's FIELD!</h2>
   <div id="wheelBox">
     <div id="wheelRing"></div>
     <img id="rootHub" src="ra-data/root-hub.png" alt="root cross-section">
@@ -1096,7 +1096,7 @@ function lessonText(combo,env,score){
     ? `${M[e.p].name}: <b style="color:#1e8449">great call! (+${e.d.toFixed(1)} g)</b>`
     : `${M[e.p].name}: <b style="color:#b03a2e">cost you ${(-e.d).toFixed(1)} g</b> — try ${M[M[e.p].flip].name}!`);
   const bc=bestComboOf(env);
-  const head = score===100 ? "🏆 <b>PERFECT!</b> You found the champion root for this weather!" :
+  const head = score===100 ? "🏆 <b>PERFECT!</b> You found the champion root for this field!" :
     score>=90 ? "⭐ So close! A tiny tweak and you're champion:" :
     "Here's what mattered most:";
   const champNames = bc.match(/../g).map(c=>M[c].name.split(" ").slice(0,2).join(" ")).join(", ");
@@ -1130,7 +1130,7 @@ function saveScore(){
 function showBoard(){
   const lb=readLB();
   const t=document.getElementById("lbTable");
-  t.innerHTML="<tr><th></th><th>Name</th><th>Score</th><th>Weather</th></tr>"+
+  t.innerHTML="<tr><th></th><th>Name</th><th>Score</th><th>Field</th></tr>"+
     (lb.length? lb.slice(0,10).map((r,i)=>`<tr><td>${i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)}</td><td><b>${r.n}</b></td><td>${r.s}${r.s===100?" 🏆":""}</td><td>${ENVS[r.e].em}</td></tr>`).join("")
      : "<tr><td colspan=4>No champions yet today — be the first!</td></tr>");
   go("board");
@@ -1206,13 +1206,13 @@ const INTRO=[
   capS:"Side roots 🌳 catch lots of food up top — but in a DRY year, go DEEP instead!",
   sayS:["Lots of side roots catch lots of food up top.","But in a dry year, go deeper instead!"]},
  {id:"p14", type:"final",
-  cap:"So there is NO single best root. A clever root MATCHES the weather! 🌈☀️🍽️🪨",
-  say:["So, young scientists, what did we learn?","There is no single best root.","The best root is the one that matches the weather.","And that is exactly what real scientists study."]},
+  cap:"So there is NO single best root. A clever root MATCHES its field! 🌈☀️🍽️🪨",
+  say:["So, young scientists, what did we learn?","There is no single best root.","The best root is the one that matches its field.","And that is exactly what real scientists study."]},
  {id:"p15", type:"go", sky:"#8ec9ec", final:true, short:1,
   capS:"Now it's YOUR turn! Spin the wheel and grow the BIGGEST plant! 🚀",
-  sayS:["Now it is your turn.","Spin the weather wheel, and grow the biggest plant!"],
+  sayS:["Now it is your turn.","Spin the field wheel, and grow the biggest plant!"],
   cap:"Now it's YOUR turn! Spin the wheel, build me your way, and grow the BIGGEST plant! 🚀",
-  say:["Now it is your turn.","Spin the weather wheel, and build me your way.","Let us grow the biggest plant in the whole field!"]}
+  say:["Now it is your turn.","Spin the field wheel, and build me your way.","Let us grow the biggest plant in the whole field!"]}
 ];
 function artNested(key,x,y,s){ return WEATHER_ART[key].replace(/^<svg[^>]*>/, `<svg x="${x}" y="${y}" width="${s}" height="${s}" viewBox="0 0 100 100">`); }
 function rootPath(kind,x){
@@ -1394,7 +1394,7 @@ function buildScene(sc){
       s+=`<g filter="url(#fSoft)">`+artNested(it[0],x,26,74)+`</g>`;
       s+=label(x+37,106,86,it[1],15);
     });
-    s+=`<text x="200" y="202" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" font-family="Segoe UI,Arial" stroke="#3d2b15" stroke-width="1">Match your root to the weather!</text>`;
+    s+=`<text x="200" y="202" text-anchor="middle" font-size="25" font-weight="900" fill="#fff" font-family="Segoe UI,Arial" stroke="#3d2b15" stroke-width="1">Match your root to the field!</text>`;
     s+=`<text x="200" y="236" text-anchor="middle" font-size="30" class="badge">🏆 🌱 🏆</text>`;
     return s+`</svg>`;
   }

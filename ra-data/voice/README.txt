@@ -65,10 +65,10 @@ FILE NAMES (exactly these, lower case):
             energy and go deeper.
 
   p14.mp3   So, young scientists, what did we learn? There is no single best
-            root. The best root is the one that matches the weather. And that
+            root. The best root is the one that matches its field. And that
             is exactly what real scientists study.
 
-  p15.mp3   Now it is your turn. Spin the weather wheel, and build me your way.
+  p15.mp3   Now it is your turn. Spin the field wheel, and build me your way.
             Let us grow the biggest plant in the whole field!
 
 WHICH ONES MATTER MOST
@@ -96,7 +96,7 @@ just the short cut, read these instead:
        so you get much more root!
   p13  Lots of side roots catch lots of food up top. But in a dry year, go
        deeper instead!
-  p15  Now it is your turn. Spin the weather wheel, and grow the biggest plant!
+  p15  Now it is your turn. Spin the field wheel, and grow the biggest plant!
 
 (Recording the short wording means the Full Story pages that share those
 numbers will also use it. That is fine - it still says the right thing.)

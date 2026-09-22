@@ -20,7 +20,7 @@ Environments: `Perfect` (HighN, watered) · `Drought` (HighN, DR) · `LowN`
 1. Upload the 3 files to the cluster (run from this folder in Git Bash / scp):
 
 ```bash
-scp game64_recipe.csv build_game64.sh run_array_game64.sh avhkz@hellbender.rnet.missouri.edu:~/final_study/
+scp game64_recipe.csv build_game64.sh run_array_game64.sh YOUR-USERNAME@hellbender.rnet.missouri.edu:~/final_study/
 ```
 
 2. On the cluster (Open OnDemand shell or terminal):
@@ -49,7 +49,7 @@ cat ~/final_study/runs_game64/*/run.log 2>/dev/null | grep -c "Simulation took"
 cd ~/final_study/runs_game64 && tar czf ~/game64_results.tar.gz */tabled_output.tab
 ```
 
-then from the laptop: `scp avhkz@hellbender.rnet.missouri.edu:~/game64_results.tar.gz ~/Desktop/RootGames/cluster/`
+then from the laptop: `scp YOUR-USERNAME@hellbender.rnet.missouri.edu:~/game64_results.tar.gz ~/Desktop/RootGames/cluster/`
 
 ## After download
 

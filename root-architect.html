@@ -253,7 +253,7 @@
     <canvas id="simCanvas"></canvas>
     <div id="dayBadge">Day 0</div><div id="envBadge"></div>
   </div>
-  <button class="bigbtn" id="harvestBtn" style="display:none" onclick="showResults()">🌽 HARVEST!</button>
+  <button class="bigbtn" id="harvestBtn" style="display:none" onclick="showResults()">🌿 HARVEST!</button>
 </div>
 
 <div class="screen" id="s_results">
@@ -1137,8 +1137,12 @@ function paintPlant(ctx,cx,gy,f,v,t){
     const len=hgt*0.62*(1-0.3*Math.abs(i/(nLeaf+1)-0.45))*age*vig;
     if(len>4) cornLeaf(ctx,0,y,dir,len,Math.max(3,len*0.17),v);
   }
-  if(grow>0.62 && v>0.12) cornEar(ctx,-hgt*0.44, sw, Math.min(1,(grow-0.62)/0.3)*(0.35+0.65*v));
-  if(grow>0.8) cornTassel(ctx,-hgt, Math.min(1,(grow-0.8)/0.2)*vig);
+  // day 40 is still vegetative (about V8-V10): no tassel, no ear yet - just the newest leaves
+  // still rolled together at the top of the whorl
+  const wl=Math.max(6,hgt*0.16);
+  for(const d of [-1,1]){ ctx.fillStyle= v>0.55?"#7fd35e":"#b9d878";
+    ctx.beginPath(); ctx.moveTo(0,-hgt); ctx.quadraticCurveTo(d*wl*0.35,-hgt-wl*0.75,d*wl*0.18,-hgt-wl);
+    ctx.quadraticCurveTo(d*wl*0.05,-hgt-wl*0.5,0,-hgt); ctx.fill(); }
   ctx.restore();
 }
 function cornLeaf(ctx,x,y,dir,len,w,v){
@@ -1154,27 +1158,6 @@ function cornLeaf(ctx,x,y,dir,len,w,v){
   ctx.strokeStyle="rgba(255,255,225,.5)"; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(x,y); ctx.bezierCurveTo(c1x,c1y+w*0.3,c2x,c2y+w*0.2,ex,tipY); ctx.stroke();
 }
-function cornTassel(ctx,top,f){
-  ctx.strokeStyle="#d9b264"; ctx.lineWidth=1.6; ctx.lineCap="round"; ctx.fillStyle="#f3d27a";
-  for(let i=0;i<7;i++){ const a=(-63+i*21)*Math.PI/180, L=(20+9*(i%3))*f, tx=Math.sin(a)*L, ty=top-Math.cos(a)*L;
-    ctx.beginPath(); ctx.moveTo(0,top); ctx.quadraticCurveTo(tx*0.45,top-(top-ty)*0.8,tx,ty); ctx.stroke();
-    for(let k=1;k<=4;k++){ const q=k/4; ctx.beginPath(); ctx.arc(tx*q,top+(ty-top)*q,1.4,0,7); ctx.fill(); }
-  }
-}
-function cornEar(ctx,y,sw,f){
-  const rx=6.5*f, ry=22*f;
-  ctx.save(); ctx.translate(sw+4,y); ctx.rotate(0.26);
-  ctx.fillStyle="#e2b95a"; ctx.beginPath(); ctx.ellipse(0,0,rx,ry,0,0,7); ctx.fill();
-  ctx.fillStyle="#f4d273"; ctx.strokeStyle="#b8903c"; ctx.lineWidth=.6;
-  for(let r=0;r<5;r++) for(let c=-1;c<=1;c++){ ctx.beginPath(); ctx.arc(c*rx*0.5,-ry*0.72+r*ry*0.3,rx*0.24,0,7); ctx.fill(); ctx.stroke(); }
-  ctx.fillStyle="#4f9a3c";
-  ctx.beginPath(); ctx.moveTo(-rx*1.15,ry); ctx.quadraticCurveTo(-rx*1.9,-ry*0.2,-rx*0.55,-ry*1.05); ctx.quadraticCurveTo(-rx*0.25,-ry*0.2,-rx*1.15,ry); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(rx*1.15,ry);  ctx.quadraticCurveTo(rx*1.9,-ry*0.2,rx*0.55,-ry*1.05);   ctx.quadraticCurveTo(rx*0.25,-ry*0.2,rx*1.15,ry);  ctx.fill();
-  ctx.strokeStyle="#e9c98a"; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(-2,-ry); ctx.quadraticCurveTo(-6,-ry-9,-10,-ry-11); ctx.moveTo(1,-ry); ctx.quadraticCurveTo(2,-ry-10,-1,-ry-14); ctx.moveTo(3,-ry); ctx.quadraticCurveTo(7,-ry-8,10,-ry-10); ctx.stroke();
-  ctx.restore();
-}
-
 /* ================= results ================= */
 function showResults(){
   cancelAnimationFrame(animId);          // stop the leftover-pulse loop

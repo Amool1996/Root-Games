@@ -982,6 +982,12 @@ async function runSim(){
     P.l=P.layer.getContext("2d"); P.l.lineCap="round"; P.l.lineJoin="round";
     P.pale=rootStroke(P.l,soilY,H);
     P.alpha=P.airy?0.6:0.85;                          // Airy = lighter, air-filled look
+    /* colour spreads through the whole system: each uptake starts a wave that grows outward and
+       settles, and the waves pile up until every root carries the colour of what it drank */
+    P.CS=document.createElement("canvas"); P.CS.width=PW; P.CS.height=H;   // settled waves
+    P.C =document.createElement("canvas"); P.C.width=PW;  P.C.height=H;    // this frame's colour
+    P.T =document.createElement("canvas"); P.T.width=PW;  P.T.height=H;    // roots x colour
+    P.blobs=[]; P.blobR=Math.max(110, sc*34);
     P.idx=0; P.sparks=[];
   });
 
@@ -1014,7 +1020,20 @@ async function runSim(){
     ctx.drawImage(soilImg,P.xo,0);
     ctx.save(); ctx.translate(P.xo,0);
     drawDots(ctx,P.dots,swept);
-    ctx.drawImage(P.layer,0,0);
+    // grow this frame's waves; a finished wave is stamped onto the settled canvas once and dropped
+    const c=P.C.getContext("2d"); c.clearRect(0,0,PW,H); c.drawImage(P.CS,0,0);
+    const cs=P.CS.getContext("2d");
+    for(let i=P.blobs.length-1;i>=0;i--){ const b=P.blobs[i], age=(t-b.t0)/2600; if(age<0) continue;
+      const f=Math.min(1,age), R=P.blobR*(0.12+0.88*f);
+      const paint=(g2)=>{ const g=g2.createRadialGradient(b.x,b.y,0,b.x,b.y,R);
+        g.addColorStop(0,`rgba(${TINT[b.type]},.62)`); g.addColorStop(.55,`rgba(${TINT[b.type]},.34)`); g.addColorStop(1,`rgba(${TINT[b.type]},0)`);
+        g2.fillStyle=g; g2.beginPath(); g2.arc(b.x,b.y,R,0,7); g2.fill(); };
+      if(f>=1){ paint(cs); P.blobs.splice(i,1); } else paint(c);
+    }
+    const tt=P.T.getContext("2d"); tt.clearRect(0,0,PW,H);
+    tt.globalCompositeOperation="source-over"; tt.drawImage(P.layer,0,0);
+    tt.globalCompositeOperation="source-atop"; tt.drawImage(P.C,0,0);     // colour lands on root pixels only
+    ctx.drawImage(P.T,0,0);
     for(let i=P.sparks.length-1;i>=0;i--){ const sp=P.sparks[i], age=(t-sp.t0)/450;
       if(age<0) continue; if(age>=1){ P.sparks.splice(i,1); continue; }
       ctx.beginPath(); ctx.arc(sp.x,sp.y,3+age*10,0,7); ctx.strokeStyle=sp.c;
@@ -1034,7 +1053,8 @@ async function runSim(){
         drawSeg(P,s,x2,y2);
         for(const d of P.dots){ if(d.gone||!d.eatable) continue;   // the growing tip drinks what it touches
           if(Math.abs(d.x-x2)<grab && Math.abs(d.y-y2)<grab){ d.gone=true;
-            P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); drinkAlong(P,s,d.type,sc); } }
+            P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); drinkAlong(P,s,d.type,sc);
+            P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t}); } }
       }
     });
     panels.forEach(P=>drawPanel(P,t));
@@ -1047,7 +1067,7 @@ async function runSim(){
       // the finished roots sweep up everything they were able to reach, one sparkle at a time
       swept=true; let k=0;
       panels.forEach(P=>{ for(const d of P.dots){ if(d.gone||!d.eatable) continue; d.gone=true;
-        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+(k++)*40});
+        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+k*40}); P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t+(k++)*40});
         // colour the nearest root segment as if it reached over and drank
         let best=null, bq=Infinity; for(const s of P.segs){ const dx=P.PX(s[2])-d.x, dy=P.PY(s[3])-d.y, q=dx*dx+dy*dy; if(q<bq){ bq=q; best=s; } }
         if(best) drinkAlong(P,best,d.type,sc); } });

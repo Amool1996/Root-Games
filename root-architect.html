@@ -940,6 +940,8 @@ async function runSim(){
     P.yMul= shallow?0.48:1.0; P.xMul= shallow?1.55:0.85;
     P.thickMul=(P.p.thick==="Th")?1.7:(P.p.thick==="Sk")?0.6:1;
     P.sparse=P.p.bush==="Sp"; P.airy=P.p.air==="Ai";
+    P.fuzzy=P.p.hairs==="Fz";                          // root hairs: drawn, and they widen the drinking reach
+    P.timeMul=(P.p.speed==="Fa")?1:0.68;               // Steady grows slower, so it is visibly shorter all the way
     P.segs=[]; P.byRoot=[];
     if(P.data) P.data.roots.forEach((r,ri)=>{
       const maxR=r.p.reduce((m,q)=>Math.max(m,q[4]||0),0), lateral=maxR<0.03;
@@ -968,20 +970,14 @@ async function runSim(){
   panels.forEach((P,pi)=>{
     P.xo=pi*PW;
     P.dots=seedDots.map(o=>({x:px(o.gx), y:soilY+o.d*sc, type:o.type, gone:false}));
-    /* how much of the soil can this design actually harvest? the champion takes everything; a weaker
-       root only gets its share and what it cannot reach stays visible in the ground */
-    P.frac=Math.max(0,Math.min(1, grams(P.code,curEnv)/bestOf(curEnv)));
+    /* what a root drinks is decided only by what it reaches, so two roots that grow differently eat
+       differently, and a root never passes a dot without taking it. Root hairs widen the reach for
+       nutrients (that is their job); a smooth root has to nearly touch a dot to get it. */
     P.PX=x=>px(x*P.xMul); P.PY=y=>py(y*P.yMul);
-    for(const d of P.dots){ let near=Infinity;
-      for(const s of P.segs){ const dx=P.PX(s[2])-d.x, dy=P.PY(s[3])-d.y, q=dx*dx+dy*dy; if(q<near) near=q; }
-      d.near=near; }
-    const byType={}; for(const d of P.dots){ (byType[d.type]=byType[d.type]||[]).push(d); }
-    for(const t in byType){ const arr=byType[t].sort((a,b)=>a.near-b.near), quota=Math.round(P.frac*arr.length);
-      arr.forEach((d,i)=>{ d.eatable=i<quota; }); }
     P.layer=document.createElement("canvas"); P.layer.width=PW; P.layer.height=H;
     P.l=P.layer.getContext("2d"); P.l.lineCap="round"; P.l.lineJoin="round";
     P.pale=rootStroke(P.l,soilY,H);
-    P.alpha=P.airy?0.6:0.85;                          // Airy = lighter, air-filled look
+    P.alpha=P.airy?0.55:0.95;                         // Airy = lighter, see-through; Solid = dense
     /* colour spreads through the whole system: each uptake starts a wave that grows outward and
        settles, and the waves pile up until every root carries the colour of what it drank */
     P.CS=document.createElement("canvas"); P.CS.width=PW; P.CS.height=H;   // settled waves
@@ -1001,7 +997,15 @@ async function runSim(){
     const l=P.l;
     l.globalCompositeOperation="source-over"; l.globalAlpha=P.alpha;
     l.strokeStyle=P.pale; l.lineWidth=segWidth(P,s); l.lineCap="round";
-    l.beginPath(); l.moveTo(P.PX(s[0]),P.PY(s[1])); l.lineTo(x2,y2); l.stroke();
+    const x1=P.PX(s[0]), y1=P.PY(s[1]);
+    l.beginPath(); l.moveTo(x1,y1); l.lineTo(x2,y2); l.stroke();
+    if(P.fuzzy && s[5]>=0.03 && (s[8]&1)===0){            // root hairs on the main roots, so Fuzzy LOOKS fuzzy
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L, w=l.lineWidth, hl=w*1.2+3;
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      l.globalAlpha=0.55*P.alpha; l.lineWidth=0.9;
+      l.beginPath(); l.moveTo(mx+nx*w*.5,my+ny*w*.5); l.lineTo(mx+nx*(w*.5+hl),my+ny*(w*.5+hl)+1.2);
+      l.moveTo(mx-nx*w*.5,my-ny*w*.5); l.lineTo(mx-nx*(w*.5+hl),my-ny*(w*.5+hl)+1.2); l.stroke();
+    }
   }
   /* water flows from where it was taken up toward the plant, so the colour runs UP the root and
      fades out: a gradient along the root, painted only onto root pixels */
@@ -1048,11 +1052,12 @@ async function runSim(){
   function frame(t){
     day=Math.max(0,Math.min(endDay,(t-t0)/DUR*endDay));
     panels.forEach(P=>{
-      while(P.idx<P.segs.length && P.segs[P.idx][4]<=day){
+      while(P.idx<P.segs.length && P.segs[P.idx][4]<=day*P.timeMul){
         const s=P.segs[P.idx++], x2=P.PX(s[2]), y2=P.PY(s[3]);
         drawSeg(P,s,x2,y2);
-        for(const d of P.dots){ if(d.gone||!d.eatable) continue;   // the growing tip drinks what it touches
-          if(Math.abs(d.x-x2)<grab && Math.abs(d.y-y2)<grab){ d.gone=true;
+        for(const d of P.dots){ if(d.gone) continue;                // the growing tip drinks what it reaches
+          const gR = grab*(P.fuzzy ? (d.type==="water"?1.25:2.0) : 0.8);
+          if(Math.abs(d.x-x2)<gR && Math.abs(d.y-y2)<gR){ d.gone=true;
             P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); drinkAlong(P,s,d.type,sc);
             P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t}); } }
       }
@@ -1064,15 +1069,8 @@ async function runSim(){
     document.getElementById("dayBadge").textContent="Day "+Math.floor(day);
     if(day<endDay){ animId=requestAnimationFrame(frame); }
     else if(!swept){
-      // the finished roots sweep up everything they were able to reach, one sparkle at a time
-      swept=true; let k=0;
-      panels.forEach(P=>{ for(const d of P.dots){ if(d.gone||!d.eatable) continue; d.gone=true;
-        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+k*40}); P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t+(k++)*40});
-        // colour the nearest root segment as if it reached over and drank
-        let best=null, bq=Infinity; for(const s of P.segs){ const dx=P.PX(s[2])-d.x, dy=P.PY(s[3])-d.y, q=dx*dx+dy*dy; if(q<bq){ bq=q; best=s; } }
-        if(best) drinkAlong(P,best,d.type,sc); } });
-      sweepEnd=t+k*40+600;
-      document.getElementById("simTitle").textContent="Day 40 — the roots are drinking and eating…";
+      swept=true; sweepEnd=t+900;
+      document.getElementById("simTitle").textContent="Day 40 — both roots are fully grown";
       animId=requestAnimationFrame(frame);
     }
     else if(t<sweepEnd){ animId=requestAnimationFrame(frame); }

@@ -140,7 +140,7 @@
   .card.sel { border-color:#ff9d00; background:#fff3c4; box-shadow:0 0 14px #ffbe45; }
   /* sim + results */
   #simWrap { position:relative; }
-  #simCanvas { background:transparent; border-radius:16px; box-shadow:0 8px 30px rgba(0,0,0,.45); }
+  #simCanvas { background:transparent; border-radius:10px; box-shadow:0 10px 34px rgba(0,0,0,.5); display:block; }
   #dayBadge { position:absolute; top:10px; left:12px; background:rgba(0,0,0,.55); color:#fff;
     padding:6px 14px; border-radius:12px; font-size:22px; font-weight:bold; }
   #envBadge { position:absolute; top:10px; right:12px; background:rgba(0,0,0,.55); color:#fff;
@@ -872,133 +872,175 @@ function resourcePlan(env){
     P:     env==="LowP"    ? {n:6, y0:1, y1:14 } : {n:22,y0:1,y1:26}
   };
 }
-function rootGradient(lctx, soilY, H){
+/* roots are drawn pale, like a real washed root, and only take on colour where they drink */
+function rootStroke(lctx, soilY, H){
   const g=lctx.createLinearGradient(0, soilY, 0, H);
-  g.addColorStop(0.00, "#ffd24d");  // surface: bright gold
-  g.addColorStop(0.30, "#f59a2e");  // orange
-  g.addColorStop(0.58, "#e5602f");  // red-orange
-  g.addColorStop(0.80, "#c9346a");  // pink-magenta
-  g.addColorStop(1.00, "#7d2b8f");  // deep purple (deepest roots)
+  g.addColorStop(0, "#faf5ea"); g.addColorStop(1, "#e4d8c0");
   return g;
+}
+const TINT={water:"140,212,255", N:"255,232,130", P:"255,105,105"};
+function tintRoot(lctx, x, y, type, r){
+  // paint only onto pixels that already hold root, so the root itself turns blue / yellow / red
+  lctx.save(); lctx.globalCompositeOperation="source-atop"; lctx.globalAlpha=1;
+  const g=lctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,`rgba(${TINT[type]},.95)`); g.addColorStop(.5,`rgba(${TINT[type]},.6)`); g.addColorStop(1,`rgba(${TINT[type]},0)`);
+  lctx.fillStyle=g; lctx.beginPath(); lctx.arc(x,y,r,0,7); lctx.fill(); lctx.restore();
+}
+function picksOf(code){ return {depth:code.slice(0,2),speed:code.slice(2,4),hairs:code.slice(4,6),thick:code.slice(6,8),bush:code.slice(8,10),air:code.slice(10,12)}; }
+function shapeOf(p){ return p.depth+p.speed+p.hairs+"Ma"; }
+function roundRect(ctx,x,y,w,hh,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+hh,r); ctx.arcTo(x+w,y+hh,x,y+hh,r); ctx.arcTo(x,y+hh,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+/* the ground, drawn once per run: sky, grass, layered soil with grain, stones and a depth ruler */
+function makeSoil(PW,H,soilY,sc,visD,seed){
+  const c=document.createElement("canvas"); c.width=PW; c.height=H; const g=c.getContext("2d"); const r=rng(seed);
+  const sky=g.createLinearGradient(0,0,0,soilY); sky.addColorStop(0,"#63b1e6"); sky.addColorStop(1,"#dff1fb");
+  g.fillStyle=sky; g.fillRect(0,0,PW,soilY);
+  const soil=g.createLinearGradient(0,soilY,0,H);
+  soil.addColorStop(0,"#8f6a41"); soil.addColorStop(.28,"#6f4d2c"); soil.addColorStop(.7,"#4a321b"); soil.addColorStop(1,"#27180b");
+  g.fillStyle=soil; g.fillRect(0,soilY,PW,H-soilY);
+  for(let i=1;i<=5;i++){ const y=soilY+(H-soilY)*i/6+(r()-.5)*16;                 // strata
+    g.fillStyle=`rgba(0,0,0,${(0.05+r()*0.07).toFixed(3)})`; g.fillRect(0,y,PW,4+r()*12); }
+  for(let i=0;i<420;i++){ g.fillStyle=r()<.55?"rgba(0,0,0,.22)":"rgba(255,228,185,.13)";  // grain
+    g.beginPath(); g.arc(r()*PW, soilY+4+r()*(H-soilY-4), .8+r()*2.4, 0, 7); g.fill(); }
+  for(let i=0;i<20;i++){ const x=r()*PW, y=soilY+30+r()*(H-soilY-50), w=5+r()*12;      // stones
+    g.fillStyle="#5b4029"; g.beginPath(); g.ellipse(x,y,w,w*.65,0,0,7); g.fill();
+    g.fillStyle="rgba(255,255,255,.15)"; g.beginPath(); g.ellipse(x-w*.2,y-w*.25,w*.5,w*.28,0,0,7); g.fill(); }
+  g.fillStyle="#3f8a2e"; g.fillRect(0,soilY-5,PW,7);                                    // grass
+  g.strokeStyle="#3f8a2e"; g.lineWidth=2.2; g.lineCap="round";
+  for(let x=4;x<PW;x+=9){ g.beginPath(); g.moveTo(x,soilY-4); g.lineTo(x+(r()<.5?-3:3), soilY-13-r()*8); g.stroke(); }
+  const step = visD>90 ? 50 : 25;                                                      // ruler
+  g.fillStyle="rgba(255,255,255,.55)"; g.font="12px 'Segoe UI',sans-serif"; g.textAlign="left"; g.textBaseline="alphabetic";
+  for(let d=step; d<=visD; d+=step){ const y=soilY+d*sc; g.fillRect(6,y,26,1); g.fillText(d+" cm",6,y-4); }
+  return c;
 }
 async function runSim(){
   go("sim");
   lastLeft=null;
   const E=ENVS[curEnv];
-  document.getElementById("simTitle").textContent="The supercomputer grows your root…";
+  document.getElementById("simTitle").textContent="Your root vs the champion — growing side by side";
   document.getElementById("envBadge").textContent=E.em+" "+E.name;
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
-  const W=Math.min(window.innerWidth*0.92, 560), H=Math.min(window.innerHeight*0.66, 660);
+  const W=Math.min(window.innerWidth*0.96, 1240), H=Math.min(window.innerHeight*0.68, 780);
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
-  const soilY=H*0.15;
-  const sc=Math.min(W/34, (H-soilY-8)/155);
-  const px=x=>W/2+x*sc, py=y=>soilY-y*sc;   // y in cm, positive up
-  // build resource dots (screen coords)
-  const plan=resourcePlan(curEnv); const dots=[];
-  for(const type in plan){ const s=plan[type];
-    for(let i=0;i<s.n;i++){
-      const gx=(Math.random()*2-1)*15.5;
-      const gy=-(s.y0+Math.random()*(s.y1-s.y0));
-      dots.push({x:px(gx),y:py(gy),type,gone:false});
-    }
-  }
-  const sparks=[];
-  paintSoil(ctx,W,H,soilY,sc); drawDots(ctx,dots); drawLegend(ctx,W,H);
-  let data=null;
-  try { data=await loadRoots(rootDataKey(shapeCode(), curEnv)); } catch(e){}
-  const thickMul = (picks.thick==="Th") ? 1.7 : (picks.thick==="Sk") ? 0.6 : 1;  // show thickness choice
-  const sparse = picks.bush==="Sp";                                              // Sparse thins out side roots
-  /* The 16 real OSR geometries barely differ in depth (gravitropism pulls them all down), so the
-     Deep/Shallow card would be invisible. Stretch the real root to match the card the kid picked:
-     Shallow stays up top and spreads wide, Deep drives down in a narrower column. */
-  const shallow = picks.depth==="Sh";
-  const yMul = shallow ? 0.48 : 1.0, xMul = shallow ? 1.55 : 0.85;
-  const PX = x=>px(x*xMul), PY = y=>py(y*yMul);
-  const segs=[];
-  if(data) data.roots.forEach((r,ri)=>{
-    const maxR=r.p.reduce((m,p)=>Math.max(m,p[4]||0),0);
-    const isLateral = maxR < 0.03;                       // thin roots = side roots (laterals)
-    if(isLateral && sparse && (ri*13)%100 >= 30) return; // Sparse keeps ~30% of side roots
-    for(let i=1;i<r.p.length;i++){ const a=r.p[i-1],b=r.p[i];
-      segs.push([a[0],a[1],b[0],b[1],Math.max(a[3],b[3]),b[4]]); }
+  const PW=W/2, soilY=H*0.11;
+
+  /* two roots grow together on identical soil: the kid's design, and the best design for this
+     field, so the difference they see is the root and nothing else */
+  const myCode=comboCode(), champCode=bestComboOf(curEnv);
+  const panels=[ {label:"YOUR ROOT", p:Object.assign({},picks), code:myCode},
+                 {label: champCode===myCode ? "CHAMPION — that's YOU! 🏆" : "CHAMPION ROOT 🏆", p:picksOf(champCode), code:champCode} ];
+  await Promise.all(panels.map(async P=>{ try{ P.data=await loadRoots(rootDataKey(shapeOf(P.p),curEnv)); }catch(e){ P.data=null; } }));
+
+  let maxD=40, maxHW=8;
+  panels.forEach(P=>{
+    /* The 16 real OSR geometries barely differ in depth (gravitropism pulls them all down), so the
+       Deep/Shallow card would be invisible. Stretch the real root to match the card that was picked. */
+    const shallow=P.p.depth==="Sh";
+    P.yMul= shallow?0.48:1.0; P.xMul= shallow?1.55:0.85;
+    P.thickMul=(P.p.thick==="Th")?1.7:(P.p.thick==="Sk")?0.6:1;
+    P.sparse=P.p.bush==="Sp"; P.airy=P.p.air==="Ai";
+    P.segs=[];
+    if(P.data) P.data.roots.forEach((r,ri)=>{
+      const maxR=r.p.reduce((m,q)=>Math.max(m,q[4]||0),0);
+      if(maxR<0.03 && P.sparse && (ri*13)%100>=30) return;          // Sparse keeps ~30% of side roots
+      for(let i=1;i<r.p.length;i++){ const a=r.p[i-1],b=r.p[i];
+        P.segs.push([a[0],a[1],b[0],b[1],Math.max(a[3],b[3]),b[4]]);
+        maxD=Math.max(maxD,-b[1]*P.yMul); maxHW=Math.max(maxHW,Math.abs(b[0])*P.xMul); }
+    });
+    P.segs.sort((x,y)=>x[4]-y[4]);
+    P.endDay=(P.data&&P.data.endTime)||40;
   });
-  segs.sort((x,y)=>x[4]-y[4]);
-  /* ---- how much of the soil can THIS design actually harvest? ----
-     A champion root takes everything and the soil ends up empty. A weaker root only gets its
-     share, and whatever it could not reach stays in the ground for the kid to see at harvest.
-     Which dots are left is decided by the real root geometry, so a shallow root leaves the deep
-     water behind and a deep root leaves the topsoil phosphorus behind. */
-  const frac = Math.max(0, Math.min(1, grams(comboCode(),curEnv) / bestOf(curEnv)));
-  for(const d of dots){ let near=Infinity;
-    for(let i=0;i<segs.length;i++){ const s=segs[i];
-      const dx=PX(s[2])-d.x, dy=PY(s[3])-d.y, q=dx*dx+dy*dy;
-      if(q<near) near=q; }
-    d.near=near;
-  }
-  const byType={};
-  for(const d of dots){ (byType[d.type]=byType[d.type]||[]).push(d); }
-  for(const t in byType){
-    const arr=byType[t].sort((a,b)=>a.near-b.near);     // closest to the root gets eaten first
-    const quota=Math.round(frac*arr.length);
-    arr.forEach((d,i)=>{ d.eatable = i<quota; });
-  }
-  const layer=document.createElement("canvas"); layer.width=W; layer.height=H;
-  const lctx=layer.getContext("2d"); lctx.lineCap="round"; lctx.lineJoin="round";
-  lctx.strokeStyle=rootGradient(lctx, soilY, H);   // vivid depth gradient for all roots
-  lctx.globalAlpha = (picks.air==="Ai") ? 0.68 : 1;  // Airy = light, air-filled look; Solid = dense
-  let idx=0, day=0, swept=false, sweepEnd=0, leftShown=false;
-  const endDay=(data&&data.endTime)||40;
-  const t0=performance.now(), DUR=14000;   // 40 simulated days over 14 s so kids can watch the root grow
+  // one shared ruler for both panels, zoomed so the deeper of the two roots fills its panel
+  const visD=Math.min(110, maxD*1.06);
+  const sc=Math.min((PW*0.46)/Math.max(maxHW,10), (H-soilY-36)/visD);
+  const px=x=>PW/2+x*sc, py=y=>soilY-y*sc;
+
+  const soilImg=makeSoil(PW,H,soilY,sc,visD,curEnv.length*17+3);
+  // the same resource dots, in the same places, in both panels
+  const plan=resourcePlan(curEnv), kD=visD/150, seedDots=[];
+  { const r=rng(4242); const halfW=Math.min(15.5,(PW*0.46)/sc);
+    for(const type in plan){ const s=plan[type];
+      for(let i=0;i<s.n;i++) seedDots.push({type, gx:(r()*2-1)*halfW, d:(s.y0+r()*(s.y1-s.y0))*kD}); } }
+
+  panels.forEach((P,pi)=>{
+    P.xo=pi*PW;
+    P.dots=seedDots.map(o=>({x:px(o.gx), y:soilY+o.d*sc, type:o.type, gone:false}));
+    /* how much of the soil can this design actually harvest? the champion takes everything; a weaker
+       root only gets its share and what it cannot reach stays visible in the ground */
+    P.frac=Math.max(0,Math.min(1, grams(P.code,curEnv)/bestOf(curEnv)));
+    P.PX=x=>px(x*P.xMul); P.PY=y=>py(y*P.yMul);
+    for(const d of P.dots){ let near=Infinity;
+      for(const s of P.segs){ const dx=P.PX(s[2])-d.x, dy=P.PY(s[3])-d.y, q=dx*dx+dy*dy; if(q<near) near=q; }
+      d.near=near; }
+    const byType={}; for(const d of P.dots){ (byType[d.type]=byType[d.type]||[]).push(d); }
+    for(const t in byType){ const arr=byType[t].sort((a,b)=>a.near-b.near), quota=Math.round(P.frac*arr.length);
+      arr.forEach((d,i)=>{ d.eatable=i<quota; }); }
+    P.layer=document.createElement("canvas"); P.layer.width=PW; P.layer.height=H;
+    P.l=P.layer.getContext("2d"); P.l.lineCap="round"; P.l.lineJoin="round";
+    P.l.strokeStyle=rootStroke(P.l,soilY,H);
+    P.l.globalAlpha=P.airy?0.62:0.88;               // slightly see-through so dense root shows texture; Airy lighter still
+    P.idx=0; P.sparks=[];
+  });
+
+  const grab=Math.max(9,sc*3.2), tintR=Math.max(20,sc*9);
+  const endDay=Math.max(...panels.map(P=>P.endDay));
+  let day=0, swept=false, sweepEnd=0, done=false;
+  const t0=performance.now(), DUR=14000;            // 40 simulated days over 14 s
   cancelAnimationFrame(animId);
+  function drawPanel(P,t){
+    ctx.drawImage(soilImg,P.xo,0);
+    ctx.save(); ctx.translate(P.xo,0);
+    drawDots(ctx,P.dots,swept);
+    ctx.drawImage(P.layer,0,0);
+    for(let i=P.sparks.length-1;i>=0;i--){ const sp=P.sparks[i], age=(t-sp.t0)/450;
+      if(age<0) continue; if(age>=1){ P.sparks.splice(i,1); continue; }
+      ctx.beginPath(); ctx.arc(sp.x,sp.y,3+age*10,0,7); ctx.strokeStyle=sp.c;
+      ctx.globalAlpha=1-age; ctx.lineWidth=2.5; ctx.stroke(); ctx.globalAlpha=1; }
+    paintPlant(ctx,PW/2,soilY,day/endDay);
+    ctx.font="bold 15px 'Segoe UI',sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    const tw=ctx.measureText(P.label).width+28;
+    ctx.fillStyle="rgba(0,0,0,.5)"; roundRect(ctx,PW/2-tw/2,soilY+10,tw,26,13); ctx.fill();
+    ctx.fillStyle="#fff"; ctx.fillText(P.label,PW/2,soilY+23);
+    ctx.restore();
+  }
   function frame(t){
-    day=Math.max(0, Math.min(endDay,(t-t0)/DUR*endDay));
-    while(idx<segs.length && segs[idx][4]<=day){
-      const s=segs[idx++];
-      const x2=PX(s[2]),y2=PY(s[3]);
-      lctx.lineWidth=Math.max(1, Math.min(11, s[5]*2*sc*1.5*thickMul));
-      lctx.beginPath(); lctx.moveTo(PX(s[0]),PY(s[1])); lctx.lineTo(x2,y2); lctx.stroke();
-      // absorb nearby resources at the growing tip
-      for(const d of dots){ if(d.gone || !d.eatable) continue;
-        if(Math.abs(d.x-x2)<9 && Math.abs(d.y-y2)<9){ d.gone=true; sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); }
+    day=Math.max(0,Math.min(endDay,(t-t0)/DUR*endDay));
+    panels.forEach(P=>{
+      while(P.idx<P.segs.length && P.segs[P.idx][4]<=day){
+        const s=P.segs[P.idx++], x2=P.PX(s[2]), y2=P.PY(s[3]);
+        P.l.lineWidth=Math.max(1.3, Math.min(12, s[5]*2*sc*1.7*P.thickMul));
+        P.l.beginPath(); P.l.moveTo(P.PX(s[0]),P.PY(s[1])); P.l.lineTo(x2,y2); P.l.stroke();
+        for(const d of P.dots){ if(d.gone||!d.eatable) continue;   // the growing tip drinks what it touches
+          if(Math.abs(d.x-x2)<grab && Math.abs(d.y-y2)<grab){ d.gone=true;
+            P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); tintRoot(P.l,d.x,d.y,d.type,tintR); } }
       }
-    }
-    paintSoil(ctx,W,H,soilY,sc);
-    drawDots(ctx,dots,swept);
-    ctx.drawImage(layer,0,0);
-    // sparkles
-    for(let i=sparks.length-1;i>=0;i--){ const sp=sparks[i]; const age=(t-sp.t0)/450;
-      if(age<0) continue;                       // staggered harvest sparkles wait their turn
-      if(age>=1){ sparks.splice(i,1); continue; }
-      ctx.beginPath(); ctx.arc(sp.x,sp.y,3+age*9,0,7); ctx.strokeStyle=sp.c;
-      ctx.globalAlpha=1-age; ctx.lineWidth=2.5; ctx.stroke(); ctx.globalAlpha=1;
-    }
-    paintPlant(ctx,W,soilY,day/endDay);
+    });
+    panels.forEach(P=>drawPanel(P,t));
+    ctx.setLineDash([6,8]); ctx.strokeStyle="rgba(255,255,255,.6)"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(PW,0); ctx.lineTo(PW,H); ctx.stroke(); ctx.setLineDash([]);
     drawLegend(ctx,W,H);
     document.getElementById("dayBadge").textContent="Day "+Math.floor(day);
     if(day<endDay){ animId=requestAnimationFrame(frame); }
     else if(!swept){
-      // the finished root sweeps up everything it was able to reach, one sparkle at a time
+      // the finished roots sweep up everything they were able to reach, one sparkle at a time
       swept=true; let k=0;
-      for(const d of dots){ if(d.gone || !d.eatable) continue;
-        d.gone=true; sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+(k++)*40}); }
+      panels.forEach(P=>{ for(const d of P.dots){ if(d.gone||!d.eatable) continue; d.gone=true;
+        P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t+(k++)*40}); tintRoot(P.l,d.x,d.y,d.type,tintR); } });
       sweepEnd=t+k*40+600;
-      document.getElementById("simTitle").textContent="Day 40 — your root is drinking and eating…";
+      document.getElementById("simTitle").textContent="Day 40 — the roots are drinking and eating…";
       animId=requestAnimationFrame(frame);
     }
     else if(t<sweepEnd){ animId=requestAnimationFrame(frame); }
     else {
-      if(!leftShown){ leftShown=true;
-        lastLeft={water:0,N:0,P:0};
-        for(const d of dots){ if(!d.gone) lastLeft[d.type]++; }
+      if(!done){ done=true;
+        lastLeft={water:0,N:0,P:0}; for(const d of panels[0].dots){ if(!d.gone) lastLeft[d.type]++; }
         const tot=lastLeft.water+lastLeft.N+lastLeft.P;
-        document.getElementById("simTitle").innerHTML = tot===0
+        document.getElementById("simTitle").textContent = tot===0
           ? "Day 40 — your root grabbed EVERYTHING! 🎉"
-          : `Day 40 — left in the soil: ${leftStr(lastLeft,true)}`;
-        document.getElementById("harvestBtn").style.display="inline-block";
-      }
-      animId=requestAnimationFrame(frame);   // keep the leftovers gently pulsing
+          : "Day 40 — look at the soil: what did each root leave behind? 👀";
+        document.getElementById("harvestBtn").style.display="inline-block"; }
+      animId=requestAnimationFrame(frame);          // keep the leftovers gently pulsing
     }
   }
   animId=requestAnimationFrame(frame);
@@ -1030,26 +1072,16 @@ function drawLegend(ctx,W,H){
     ctx.fillStyle="#fff"; ctx.textAlign="left"; ctx.fillText(it.label.replace(/^..\s/,""), x+18, y);
     x += ctx.measureText(it.label.replace(/^..\s/,"")).width + 42; });
 }
-function paintSoil(ctx,W,H,soilY,sc){
-  const sky=ctx.createLinearGradient(0,0,0,soilY); sky.addColorStop(0,"#8ec9ec"); sky.addColorStop(1,"#d5ecf8");
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,soilY);
-  const soil=ctx.createLinearGradient(0,soilY,0,H); soil.addColorStop(0,"#967a52"); soil.addColorStop(1,"#4a3520");
-  ctx.fillStyle=soil; ctx.fillRect(0,soilY,W,H-soilY);
-  ctx.strokeStyle="#3d2b15"; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(0,soilY); ctx.lineTo(W,soilY); ctx.stroke();
-  ctx.fillStyle="rgba(255,255,255,.45)"; ctx.font="12px sans-serif"; ctx.textAlign="left"; ctx.textBaseline="alphabetic";
-  for(let d=50; d<=150; d+=50){ const y=soilY+d*sc; ctx.fillRect(4,y,24,1); ctx.fillText(d+" cm",4,y-4); }
-}
-function paintPlant(ctx,W,soilY,f){
+function paintPlant(ctx,cx,soilY,f){
   const h=soilY*0.9*Math.max(0.06,f);
   ctx.strokeStyle="#2e7d32"; ctx.lineWidth=5; ctx.lineCap="round";
-  ctx.beginPath(); ctx.moveTo(W/2,soilY); ctx.lineTo(W/2,soilY-h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx,soilY); ctx.lineTo(cx,soilY-h); ctx.stroke();
   ctx.lineWidth=3;
   const nLeaf=Math.max(1,Math.floor(f*6));
   for(let i=1;i<=nLeaf;i++){
     const y=soilY-h*i/(nLeaf+0.5), len=h*0.45, dir=(i%2? -1:1);
-    ctx.beginPath(); ctx.moveTo(W/2,y);
-    ctx.quadraticCurveTo(W/2+dir*len*0.7, y-len*0.25, W/2+dir*len, y-len*0.05); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx,y);
+    ctx.quadraticCurveTo(cx+dir*len*0.7, y-len*0.25, cx+dir*len, y-len*0.05); ctx.stroke();
   }
 }
 
@@ -1063,9 +1095,7 @@ function showResults(){
   const E=ENVS[curEnv];
   document.getElementById("resTitle").textContent=`${E.em} Your harvest in the ${E.name}:`;
   const tot = lastLeft ? (lastLeft.water+lastLeft.N+lastLeft.P) : 0;
-  const leftLine = !lastLeft ? ""
-    : tot===0 ? `<br><b style="color:#1e8449">Your root cleaned out the whole field — nothing left behind! 🏆</b>`
-              : `<br>Still stuck in the soil, out of reach: <b>${leftStr(lastLeft)}</b>`;
+  const leftLine = (lastLeft && tot===0) ? `<br><b style="color:#1e8449">Your root cleaned out the whole field — nothing left behind! 🏆</b>` : "";
   document.getElementById("gramLine").innerHTML=`Your corn plant grew to <b>${g.toFixed(1)} grams</b> — the best possible root made <b>${best.toFixed(1)} g</b>.<br>Root Score = your plant ÷ champion plant × 100${leftLine}`;
   document.getElementById("lessonBox").innerHTML=lessonText(combo,curEnv,score);
   go("results");

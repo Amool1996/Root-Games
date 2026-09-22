@@ -89,7 +89,7 @@
   /* wheel */
   /* sized off the window HEIGHT too, so the wheel plus the result text plus the next button
      always fit on screen — on a short laptop the wheel shrinks instead of pushing the button off */
-  #wheelBox { position:relative; width:min(84vw,50vh,520px); height:min(84vw,50vh,520px);
+  #wheelBox { position:relative; width:min(88vw,56vh,640px); height:min(88vw,56vh,640px);
     flex-shrink:0; aspect-ratio:1; z-index:2; }
   #wheelRing { position:absolute; inset:0; border-radius:50%; border:6px solid #fff;
     box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 22px rgba(0,0,0,.25); z-index:1; }
@@ -106,17 +106,18 @@
   .wSlot.won { transform:translate(-50%,-50%) scale(1.22); z-index:7;
     box-shadow:0 0 0 5px #ffe14d, 0 0 24px 4px #ffd23f; }
   .wCartoon { width:100%; height:100%; border-radius:50%; overflow:hidden; border:6px solid #fff; background:#fff; }
-  /* living good-vs-bad root vignettes around the wheel */
+  /* a whole living field behind the wheel, drawn like the story scenes */
   #wheelBg { position:absolute; inset:0; z-index:0; pointer-events:none; }
-  #wheelBg .vig { position:absolute; width:min(16vw,190px); opacity:.74;
-    transition:opacity .4s, transform .4s, filter .4s; animation:vigFloat 7s ease-in-out infinite; }
-  #wheelBg .vig svg { width:100%; height:auto; display:block; }
-  #wheelBg .vig.lit { opacity:1; transform:scale(1.1); filter:drop-shadow(0 0 14px #ffd23f); }
-  @keyframes vigFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+  #wheelBg svg { width:100%; height:100%; display:block; opacity:.72; }
+  #s_wheel h2, #s_wheel .sub, #s_wheel .bigbtn { position:relative; z-index:2; }
+  /* tighter stacking so the bigger wheel still leaves the next button on screen */
+  #s_wheel { gap:9px; padding:10px; }
+  #wheelBg::after { content:""; position:absolute; inset:0; background:
+    radial-gradient(ellipse at 50% 46%, rgba(0,0,0,.30) 0%, rgba(0,0,0,0) 58%),
+    linear-gradient(180deg, rgba(0,0,0,.52) 0%, rgba(0,0,0,.14) 34%, rgba(0,0,0,.42) 100%); }
   @keyframes growCycle { 0%{stroke-dashoffset:520} 50%{stroke-dashoffset:0}
                          90%{stroke-dashoffset:0} 100%{stroke-dashoffset:520} }
-  .bgRoot { stroke-dasharray:520; animation:growCycle 9s ease-in-out infinite; }
-  @media (max-width:920px){ #wheelBg { display:none; } }
+  .bgRoot { stroke-dasharray:520; animation:growCycle 11s ease-in-out infinite; }
   .wCartoon svg { width:100%; height:100%; display:block; }
   /* design cards */
   #s_design { justify-content:flex-start; overflow-y:auto; padding-top:14px; gap:12px; }
@@ -574,7 +575,6 @@ function startRound(){ picks={}; curEnv=null; drawWheel(0);
   document.getElementById("wheelNext").style.display="none";
   document.getElementById("spinBtn").style.display="inline-block";
   document.querySelectorAll(".wSlot").forEach(n=>n.classList.remove("won"));
-  document.querySelectorAll("#wheelBg .vig").forEach(n=>n.classList.remove("lit"));
   const arrow=document.getElementById("spinArrow"), hub=document.getElementById("rootHub");
   arrow.style.transition="none"; arrow.style.transform="translate(-50%,-100%) rotate(0deg)";
   hub.style.transition="none"; hub.style.transform="translate(-50%,-50%) rotate(0deg)";
@@ -583,77 +583,96 @@ function startRound(){ picks={}; curEnv=null; drawWheel(0);
 /* ================= wheel (root hub + arrow + outside cartoons) ================= */
 const WHEEL_POS={Perfect:["50%","16%"],Drought:["84%","50%"],LowN:["50%","84%"],LowP:["16%","50%"]};
 const WHEEL_ANGLE={Perfect:0,Drought:90,LowN:180,LowP:270};   // arrow rotation to point at each
-/* ---- the four weathers, each showing the root that wins and the root that loses ---- */
-const VIG={
-  Perfect:{pos:["2%","13%",null,null], good:"bushy",  bad:"thick", gl:"cheap + bushy", bl:"over-built", res:["P","N"]},
-  Drought:{pos:[null,"13%","2%",null], good:"deep",   bad:"short", gl:"DEEP wins",     bl:"too short",  res:["water"]},
-  LowN:   {pos:["2%",null,null,"6%"],  good:"deepBushy", bad:"short", gl:"DEEP + bushy", bl:"too short", res:["N"]},
-  LowP:   {pos:[null,null,"2%","6%"],  good:"fuzzy",  bad:"deep",  gl:"FUZZY wins",    bl:"too deep",   res:["P"]}
-};
-function miniRoot(kind,x,delay){
-  const st=`stroke="url(#vgRoot)" fill="none" stroke-linecap="round"`;
+/* ---------- the field behind the wheel ----------
+   Same look as Rooty's Story, but full bleed and on a loop. Its gradient ids all end in "wb"
+   because the story's SVGs sit in the DOM too (hidden), and a hidden copy would win the id. */
+function wbPlant(x,gy,s,delay){
+  const L=[[-1,38,-8],[1,42,-17],[-1,45,-26],[1,41,-34],[-1,32,-41]];
+  let g=`<g transform="translate(${x},${gy})"><animateTransform attributeName="transform" type="rotate" additive="sum"
+      values="0 0 0;2.4 0 0;0 0 0;-2.4 0 0;0 0 0" dur="${(5+delay).toFixed(1)}s" repeatCount="indefinite"/>`;
+  g+=`<g transform="scale(${s})">`;
+  g+=`<path d="M-3.4 0 L-2 -54 L2 -54 L3.4 0 Z" fill="url(#wbStem)"/>`;
+  L.forEach(([d,len,ly])=>{
+    const tx=(d*len).toFixed(1), ty=ly+7;
+    g+=`<path d="M0 ${ly} C${(d*len*0.32).toFixed(1)} ${ly-21} ${(d*len*0.74).toFixed(1)} ${ly-17} ${tx} ${ty}`+
+       ` C${(d*len*0.7).toFixed(1)} ${ly-6} ${(d*len*0.3).toFixed(1)} ${ly+5} 0 ${ly+3} Z" fill="url(#wbLeaf)"/>`;
+  });
+  return g+`</g></g>`;
+}
+function wbRoot(kind,x,gy,delay){
+  const st=`stroke="url(#wbRootG)" fill="none" stroke-linecap="round"`;
   const g=(d,w,dl)=>`<path class="bgRoot" d="${d}" ${st} stroke-width="${w}" style="animation-delay:${(delay+dl).toFixed(1)}s"/>`;
   let s="";
-  if(kind==="deep"||kind==="deepBushy"){
-    s+=g(`M${x} 36 C${x-4} 70 ${x+4} 100 ${x} 140`,4.6,0);
-    s+=g(`M${x} 74 q-9 4 -14 12`,2.4,.5)+g(`M${x} 104 q10 4 15 12`,2.4,.9);
-    if(kind==="deepBushy") for(let i=0;i<6;i++) s+=g(`M${x} ${50+i*15} q${i%2?9:-9} 3 ${i%2?15:-15} 9`,2,.4+i*.22);
-  } else if(kind==="short"){
-    s+=g(`M${x} 36 C${x-3} 48 ${x+3} 58 ${x} 68`,4.6,0);
-    s+=g(`M${x} 48 q-13 3 -20 8`,2.4,.5)+g(`M${x} 54 q13 3 20 8`,2.4,.7);
+  if(kind==="deep"){
+    s+=g(`M${x} ${gy} C${x-9} ${gy+70} ${x+9} ${gy+150} ${x} ${gy+265}`,7,0);
+    s+=g(`M${x} ${gy+80} q-20 8 -30 26`,3.4,.6)+g(`M${x} ${gy+150} q22 8 32 26`,3.4,1.1);
+    s+=g(`M${x} ${gy+205} q-18 8 -26 24`,3,1.7);
   } else if(kind==="bushy"){
-    s+=g(`M${x} 36 C${x-3} 52 ${x+3} 66 ${x} 82`,4.4,0);
-    for(let i=0;i<6;i++) s+=g(`M${x} ${46+i*7} q${i%2?11:-11} 3 ${i%2?19:-19} 8`,2,.3+i*.2);
+    s+=g(`M${x} ${gy} C${x-6} ${gy+50} ${x+6} ${gy+100} ${x} ${gy+160}`,6,0);
+    for(let i=0;i<9;i++) s+=g(`M${x} ${gy+22+i*15} q${i%2?18:-18} 7 ${i%2?32:-32} 20`,3,.4+i*.2);
   } else if(kind==="fuzzy"){
-    s+=g(`M${x} 36 C${x-3} 50 ${x+3} 62 ${x} 76`,4.4,0);
-    for(let i=0;i<5;i++) s+=g(`M${x} ${44+i*8} q${i%2?12:-12} 3 ${i%2?21:-21} 7`,2,.3+i*.2);
-    let hs=`<g stroke="#f0dcae" stroke-width="1.3" stroke-linecap="round" opacity=".95">`;
-    for(let i=0;i<22;i++){ const sg=i%2?1:-1, yy=44+(i%11)*3.4, xx=x+sg*(6+(i%5)*4);
-      hs+=`<path d="M${xx.toFixed(1)} ${yy.toFixed(1)} l${sg*4} 3"/>`; }
+    s+=g(`M${x} ${gy} C${x-5} ${gy+40} ${x+5} ${gy+80} ${x} ${gy+120}`,6,0);
+    for(let i=0;i<6;i++) s+=g(`M${x} ${gy+18+i*16} q${i%2?20:-20} 7 ${i%2?36:-36} 16`,2.8,.4+i*.22);
+    let hs=`<g stroke="#f0dcae" stroke-width="1.8" stroke-linecap="round" opacity=".9">`;
+    for(let i=0;i<34;i++){ const sg=i%2?1:-1, yy=gy+16+(i%17)*6.4, xx=x+sg*(8+(i%6)*7);
+      hs+=`<path d="M${xx.toFixed(1)} ${yy.toFixed(1)} l${sg*7} 5"/>`; }
     s+=hs+`</g>`;
-  } else { // thick
-    s+=g(`M${x} 36 C${x-2} 50 ${x+2} 62 ${x} 74`,13,0);
+  } else {
+    s+=g(`M${x} ${gy} C${x-4} ${gy+30} ${x+4} ${gy+60} ${x} ${gy+92}`,6,0);
+    for(let i=0;i<4;i++) s+=g(`M${x} ${gy+16+i*18} q${i%2?24:-24} 8 ${i%2?44:-44} 18`,3,.5+i*.3);
   }
   return s;
 }
-function vignette(env){
-  const V=VIG[env], C={water:"#2f9fe0",N:"#3fae63",P:"#e6892a"};
-  let s=`<svg viewBox="0 0 150 160" xmlns="http://www.w3.org/2000/svg"><defs>
-    <linearGradient id="vgRoot" x1="0" y1="0" x2="1" y2="0">
+function wheelBackdrop(){
+  const W=800,H=500,gy=200;
+  let seed=29; const r=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
+  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="wbSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f93d4"/><stop offset=".6" stop-color="#8fd2f0"/><stop offset="1" stop-color="#dff3fc"/></linearGradient>
+    <linearGradient id="wbSoil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a5744a"/><stop offset=".35" stop-color="#78502f"/><stop offset="1" stop-color="#2b1c0d"/></linearGradient>
+    <linearGradient id="wbRootG" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#fbf0d6"/><stop offset=".5" stop-color="#e7cd9c"/><stop offset="1" stop-color="#bb945a"/></linearGradient>
-    <linearGradient id="vgSoil${env}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#8a6242"/><stop offset="1" stop-color="#33200f"/></linearGradient>
-    <clipPath id="vgC${env}"><rect x="2" y="2" width="146" height="156" rx="16"/></clipPath></defs>
-    <g clip-path="url(#vgC${env})">
-    <rect x="2" y="2" width="146" height="156" fill="${ENVS[env].col}" opacity=".9"/>
-    <rect x="2" y="30" width="146" height="128" fill="url(#vgSoil${env})"/>
-    <rect x="2" y="28" width="146" height="4" fill="#4e9c34"/>`;
-  // where this weather keeps its food or water
-  let seed=env.length*37+5; const r=()=>{ seed=(seed*9301+49297)%233280; return seed/233280; };
-  V.res.forEach(t=>{ const deep=(t!=="P");
-    for(let i=0;i<7;i++) s+=`<circle cx="${(10+r()*130).toFixed(1)}" cy="${(deep?(env==="Drought"?92:74)+r()*58:36+r()*22).toFixed(1)}" r="3.4" fill="${C[t]}" stroke="#fff" stroke-width="1"/>`; });
-  s+=miniRoot(V.good,46,0)+miniRoot(V.bad,108,1.2);
-  s+=`<circle cx="75" cy="18" r="17" fill="#fff" opacity=".95"/>`+artNested(env,60,3,30);
-  s+=`<circle cx="46" cy="20" r="12" fill="#2f9e4f"/><path d="M40 20 l5 5 l8 -10" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  s+=`<circle cx="108" cy="20" r="12" fill="#c0392b"/><path d="M103 15 l10 10 M113 15 l-10 10" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>`;
-  s+=`<rect x="8" y="140" width="76" height="15" rx="7.5" fill="#fff" opacity=".95"/>`;
-  s+=`<text x="46" y="151" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#1b6b34" font-family="Segoe UI,Arial">${V.gl}</text>`;
-  s+=`<rect x="88" y="140" width="54" height="15" rx="7.5" fill="#fff" opacity=".8"/>`;
-  s+=`<text x="115" y="151" text-anchor="middle" font-size="9.5" font-weight="bold" fill="#9c2f22" font-family="Segoe UI,Arial">${V.bl}</text>`;
-  return s+`</g></svg>`;
+    <linearGradient id="wbLeaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93e06a"/><stop offset=".55" stop-color="#57b93f"/><stop offset="1" stop-color="#2c8330"/></linearGradient>
+    <linearGradient id="wbStem" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2f7a2c"/><stop offset=".4" stop-color="#5eb14a"/><stop offset="1" stop-color="#2a6d28"/></linearGradient>
+    <radialGradient id="wbSun" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#fff9d4"/><stop offset=".45" stop-color="#ffeba1" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#ffeba1" stop-opacity="0"/></radialGradient>
+  </defs>`;
+  s+=`<rect width="${W}" height="${H}" fill="url(#wbSky)"/>`;
+  s+=`<circle cx="112" cy="54" r="96" fill="url(#wbSun)"/><circle cx="112" cy="54" r="30" fill="#fff5b8"/>`;
+  [[0,52,1.5,46],[0,26,1.05,64],[0,92,.8,80]].forEach(([_,cy,cs,dur],i)=>{
+    s+=`<g transform="translate(-160,${cy}) scale(${cs})" opacity=".92">
+      <animateTransform attributeName="transform" type="translate" additive="sum" from="0 0" to="${W+340} 0" dur="${dur}s" begin="${(i*9)}s" repeatCount="indefinite"/>
+      <ellipse cx="0" cy="0" rx="44" ry="22" fill="#fff"/><ellipse cx="34" cy="8" rx="32" ry="18" fill="#fff"/>
+      <ellipse cx="-32" cy="8" rx="28" ry="16" fill="#fff"/><ellipse cx="8" cy="-16" rx="26" ry="19" fill="#f8fdff"/></g>`;
+  });
+  s+=`<rect y="${gy}" width="${W}" height="${H-gy}" fill="url(#wbSoil)"/>`;
+  s+=`<rect y="${gy-8}" width="${W}" height="10" fill="#4e9c34"/>`;
+  let bl=`<g stroke="#4e9c34" stroke-width="3.4" stroke-linecap="round" fill="none">`;
+  for(let i=0;i<54;i++) bl+=`<path d="M${i*15+5} ${gy-7} l${i%2?5:-5} -12"/>`;
+  s+=bl+`</g>`;
+  s+=`<g opacity=".14" fill="#000">`;
+  for(let i=0;i<150;i++) s+=`<circle cx="${(r()*W).toFixed(1)}" cy="${(gy+8+r()*(H-gy-8)).toFixed(1)}" r="${(1.2+r()*3).toFixed(1)}"/>`;
+  s+=`</g><g opacity=".45">`;
+  for(let i=0;i<14;i++){ const x=(r()*W).toFixed(1), y=(gy+30+r()*(H-gy-50)).toFixed(1), w=(6+r()*10).toFixed(1);
+    s+=`<ellipse cx="${x}" cy="${y}" rx="${w}" ry="${(w*0.68).toFixed(1)}" fill="#6a5238"/>`; }
+  s+=`</g>`;
+  // a field of different roots, each growing on its own loop
+  const C={water:"#2f9fe0",N:"#3fae63",P:"#e6892a"};
+  for(let i=0;i<22;i++){ const t=["water","N","P"][i%3], deep=t!=="P";
+    s+=`<circle cx="${(r()*W).toFixed(1)}" cy="${(deep?gy+70+r()*200:gy+10+r()*44).toFixed(1)}" r="5" fill="${C[t]}" stroke="#fff" stroke-width="1.4" opacity=".9"/>`; }
+  [["deep",70,0],["bushy",168,1.6],["fuzzy",268,3.1],["shallow",400,2.2],["deep",520,4.0],
+   ["bushy",628,1.1],["fuzzy",740,2.7]].forEach(([k,x,d])=>{ s+=wbRoot(k,x,gy,d); });
+  [[70,1.15,0],[168,0.95,.6],[268,1.25,1.2],[400,1.1,1.8],[520,1.2,2.4],[628,0.95,3.0],[740,1.15,3.6]]
+    .forEach(([x,sc,d])=>{ s+=wbPlant(x,gy-6,sc,d); });
+  return s+`</svg>`;
 }
 function buildWheelBg(){
-  const bg=document.getElementById("wheelBg"); if(!bg) return;
-  bg.innerHTML="";
-  ENV_ORDER.forEach((e,i)=>{
-    const V=VIG[e], d=document.createElement("div");
-    d.className="vig"; d.id="vig_"+e;
-    const [l,t,rr,b]=V.pos;
-    if(l) d.style.left=l; if(rr) d.style.right=rr; if(t) d.style.top=t; if(b) d.style.bottom=b;
-    d.style.animationDelay=(i*0.9)+"s";
-    d.innerHTML=vignette(e);
-    bg.appendChild(d);
-  });
+  const bg=document.getElementById("wheelBg");
+  if(bg && !bg.firstChild) bg.innerHTML=wheelBackdrop();   // built once, then just keeps playing
 }
 function buildSpinner(){
   const box=document.getElementById("wheelBox");
@@ -695,8 +714,6 @@ function spin(){
     const E=ENVS[curEnv];
     document.querySelectorAll(".wSlot").forEach(n=>n.classList.remove("won"));
     document.getElementById("wc_"+curEnv).classList.add("won");
-    document.querySelectorAll("#wheelBg .vig").forEach(n=>n.classList.remove("lit"));
-    const vg=document.getElementById("vig_"+curEnv); if(vg) vg.classList.add("lit");
     document.getElementById("wheelResult").innerHTML=`<b style="font-size:1.3em">${E.name}!</b><br>${E.hint}`;
     document.getElementById("spinBtn").style.display="none";
     document.getElementById("wheelNext").style.display="inline-block";

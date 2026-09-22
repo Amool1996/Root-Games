@@ -54,12 +54,52 @@ FILE NAMES (exactly these, lower case):
             near the top. Digging deep will not help you here. This time, the
             short fuzzy root, with all those tiny hairs, wins.
 
-  p12.mp3   So, young scientists, what did we learn? There is no single best
+  p12.mp3   Now, a plant only has so much energy to spend. A fat, solid root
+            costs a lot to build. But a thin root, with little air spaces
+            inside, is cheap. So for the same energy, you can grow much, much
+            more root. And a fast grower reaches the food first.
+
+  p13.mp3   What about side roots? Lots of little side roots catch lots of food
+            near the top. But be careful. In a dry year, the top soil is empty.
+            Then those side roots are wasted, and it is better to save that
+            energy and go deeper.
+
+  p14.mp3   So, young scientists, what did we learn? There is no single best
             root. The best root is the one that matches the weather. And that
             is exactly what real scientists study.
 
-  p13.mp3   Now it is your turn. Spin the weather wheel, and build me your way.
+  p15.mp3   Now it is your turn. Spin the weather wheel, and build me your way.
             Let us grow the biggest plant in the whole field!
+
+WHICH ONES MATTER MOST
+----------------------
+The booth default is the SHORT cut, which plays only eight of these pages:
+
+    p01, p08, p09, p10, p11, p12, p13, p15
+
+Record those eight and the booth version is fully covered. The other seven
+only play when someone presses "Full Story (3 min)" on the title screen.
+
+The short cut uses SHORTER wording than the lines above. If you are recording
+just the short cut, read these instead:
+
+  p01  Hi! I am Rooty. I am a root, and I live under the ground.
+  p08  My job is to drink water, and eat plant food from the soil. I send it
+       all up to the leaves. That is how the plant grows big and strong.
+  p09  When there is no rain, the water hides deep down. Can you guess who
+       wins? The deep root!
+  p10  When the soil runs out of nitrogen, the rain washes it down deep too.
+       So the deep root wins again.
+  p11  But phosphorus sticks near the top. Digging deep will not help here.
+       This time the short fuzzy root wins!
+  p12  A plant only has so much energy. Thin roots with air inside are cheap,
+       so you get much more root!
+  p13  Lots of side roots catch lots of food up top. But in a dry year, go
+       deeper instead!
+  p15  Now it is your turn. Spin the weather wheel, and grow the biggest plant!
+
+(Recording the short wording means the Full Story pages that share those
+numbers will also use it. That is fine - it still says the right thing.)
 
 HOW TO RECORD
 -------------

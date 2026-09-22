@@ -1019,10 +1019,20 @@ const INTRO=[
   plants:[{x:118,kind:"fuzzy",label:"Fuzzy root"},{x:282,kind:"deep",label:"Deep root"}], winner:0,
   cap:"🪨 ROCKY SOIL! Phosphorus STICKS near the top. Now the FUZZY root wins!",
   say:["But phosphorus is different.","Phosphorus sticks to the soil, right near the top.","Digging deep will not help you here.","This time, the short fuzzy root, with all those tiny hairs, wins."]},
- {id:"p12", type:"final",
+ {id:"p12", type:"cheap", sky:"#8ec9ec", short:1,
+  cap:"A plant only has so much energy 🔋 THIN roots with AIR inside are cheap — so you get MUCH more root!",
+  say:["Now, a plant only has so much energy to spend.","A fat, solid root costs a lot to build.","But a thin root, with little air spaces inside, is cheap.","So for the same energy, you can grow much, much more root.","And a fast grower reaches the food first."],
+  capS:"A plant only has so much energy 🔋 THIN roots with AIR inside are cheap — so you get MORE root!",
+  sayS:["A plant only has so much energy.","Thin roots with air inside are cheap, so you get much more root!"]},
+ {id:"p13", type:"sideroots", sky:"#8ec9ec", short:1,
+  cap:"Side roots 🌳 catch LOTS of food up top — but in a DRY year the top soil is empty, so go deep instead!",
+  say:["What about side roots?","Lots of little side roots catch lots of food near the top.","But be careful.","In a dry year, the top soil is empty.","Then those side roots are wasted, and it is better to save that energy and go deeper."],
+  capS:"Side roots 🌳 catch lots of food up top — but in a DRY year, go DEEP instead!",
+  sayS:["Lots of side roots catch lots of food up top.","But in a dry year, go deeper instead!"]},
+ {id:"p14", type:"final",
   cap:"So there is NO single best root. A clever root MATCHES the weather! 🌈☀️🍽️🪨",
   say:["So, young scientists, what did we learn?","There is no single best root.","The best root is the one that matches the weather.","And that is exactly what real scientists study."]},
- {id:"p13", type:"go", sky:"#8ec9ec", final:true, short:1,
+ {id:"p15", type:"go", sky:"#8ec9ec", final:true, short:1,
   capS:"Now it's YOUR turn! Spin the wheel and grow the BIGGEST plant! 🚀",
   sayS:["Now it is your turn.","Spin the weather wheel, and grow the biggest plant!"],
   cap:"Now it's YOUR turn! Spin the wheel, build me your way, and grow the BIGGEST plant! 🚀",
@@ -1166,6 +1176,22 @@ function label(x,y,w,txt,size){
   return `<g filter="url(#fSoft)"><rect x="${x-w/2}" y="${y}" width="${w}" height="${fs+12}" rx="${(fs+12)/2}" fill="#fff" opacity=".96"/>`+
          `<text x="${x}" y="${y+fs+2}" text-anchor="middle" font-size="${fs}" font-weight="bold" fill="#1b2a44" font-family="Segoe UI,Arial">${txt}</text></g>`;
 }
+/* a root seen end-on: airy has big holes, solid is packed tight */
+function xsec(cx,cy,r,airy){
+  let g=`<g filter="url(#fSoft)"><circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#gRoot)" stroke="#8a5a2b" stroke-width="2.5"/>`;
+  if(airy){ for(let i=0;i<7;i++){ const a=i*Math.PI*2/7;
+      g+=`<circle cx="${(cx+Math.cos(a)*r*0.55).toFixed(1)}" cy="${(cy+Math.sin(a)*r*0.55).toFixed(1)}" r="${(r*0.21).toFixed(1)}" fill="#462c13"/>`; } }
+  else { for(let ry=-2;ry<=2;ry++) for(let rx=-2;rx<=2;rx++){
+      const x=cx+rx*r*0.36+(ry%2?r*0.18:0), y=cy+ry*r*0.36;
+      if(Math.hypot(x-cx,y-cy)<r*0.78) g+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(r*0.15).toFixed(1)}" fill="#c58f47" stroke="#a9772f" stroke-width="1"/>`; } }
+  return g+`<circle cx="${cx}" cy="${cy}" r="${(r*0.26).toFixed(1)}" fill="#fbecc8" stroke="#8a5a2b" stroke-width="1.6"/></g>`;
+}
+function battery(x,y,full){
+  let g=`<g filter="url(#fSoft)"><rect x="${x}" y="${y}" width="46" height="20" rx="6" fill="#fff" stroke="#3d2b15" stroke-width="2"/>`+
+        `<rect x="${x+46}" y="${y+6}" width="5" height="8" rx="2" fill="#3d2b15"/>`;
+  for(let i=0;i<3;i++) g+=`<rect x="${x+4+i*14}" y="${y+4}" width="11" height="12" rx="2" fill="${i<full?"#57c94a":"#e2e2e2"}"/>`;
+  return g+`</g>`;
+}
 function buildScene(sc){
   let s=`<svg viewBox="0 0 400 250" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`+stageDefs();
   const colors={water:"#2f9fe0",N:"#3fae63",P:"#e6892a"};
@@ -1257,6 +1283,40 @@ function buildScene(sc){
     s+=cornPlant(200,70,0.8,true);
     s+=label(92,152,150,"Only the TIP grows",13);
     s+=rooty(310,122,0.78,{});
+    return s+`</svg>`;
+  }
+  if(sc.type==="cheap"){
+    // same energy, two very different roots
+    s+=label(200,6,168,"Same energy to spend!",13);
+    s+=battery(72,26,3)+battery(258,26,3);
+    s+=`<path class="grow" d="M110 72 C105 94 115 110 110 128" stroke="url(#gRoot)" stroke-width="24" fill="none" stroke-linecap="round" filter="url(#fSoft)"/>`;
+    s+=xsec(44,212,21,false);
+    s+=label(104,140,120,"THICK + SOLID",12);
+    s+=label(104,166,120,"= a SHORT root",12);
+    s+=rootPath("deep",292);
+    s+=xsec(360,132,22,true);
+    s+=label(292,196,124,"SKINNY + AIRY",12);
+    s+=label(292,222,124,"= a LONG root!",12);
+    s+=`<path d="M200 44 V238" stroke="#fff" stroke-width="2" stroke-dasharray="7 6" opacity=".5"/>`;
+    s+=`<text x="292" y="120" font-size="22" class="sprk" style="transform-origin:292px 120px">✨</text>`;
+    return s+`</svg>`;
+  }
+  if(sc.type==="sideroots"){
+    s+=`<g filter="url(#fSoft)">`+artNested("Perfect",6,6,46)+artNested("Drought",348,6,46)+`</g>`;
+    s+=label(102,60,150,"Food up top? BUSHY!",12);
+    s+=label(298,60,150,"Dry year? Go DEEP",12);
+    // left: a bushy root mopping up the topsoil
+    s+=`<path class="grow" d="M102 72 C98 100 106 124 102 150" stroke="url(#gRoot)" stroke-width="6" fill="none" stroke-linecap="round" filter="url(#fSoft)"/>`;
+    for(let i=0;i<10;i++){ const y=88+i*6.5, d=(i%2)?1:-1, len=16+(i%3)*10;
+      s+=`<path class="grow" style="animation-delay:${(0.6+i*0.16).toFixed(2)}s" d="M102 ${y.toFixed(1)} q${(d*len*0.6).toFixed(1)} 4 ${(d*len).toFixed(1)} 11" stroke="url(#gRoot)" stroke-width="3" fill="none" stroke-linecap="round"/>`; }
+    for(let i=0;i<7;i++) s+=dot(i%2?"N":"P", 42+rnd()*122, 92+rnd()*54, "eat", 1.4+i*0.3);
+    // right: cracked dry topsoil, a lean root that spends its energy going down
+    s+=`<g stroke="#4a3018" stroke-width="2.4" opacity=".8" fill="none" stroke-linecap="round">`+
+       `<path d="M218 80 l6 14 l-5 12"/><path d="M262 78 l-5 16 l7 12"/><path d="M336 82 l6 13 l-6 13"/><path d="M380 78 l-5 15"/></g>`;
+    s+=`<path class="grow" d="M298 72 C293 118 305 168 298 238" stroke="url(#gRoot)" stroke-width="6" fill="none" stroke-linecap="round" filter="url(#fSoft)"/>`;
+    s+=`<path class="grow" style="animation-delay:2.2s" d="M299 176 q-12 6 -19 17" stroke="url(#gRoot)" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+    for(let i=0;i<5;i++) s+=dot("water", 236+rnd()*148, 186+rnd()*50, "eat", 2.4+i*0.3);
+    s+=`<path d="M200 44 V238" stroke="#fff" stroke-width="2" stroke-dasharray="7 6" opacity=".5"/>`;
     return s+`</svg>`;
   }
   if(sc.type==="grow"){

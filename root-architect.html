@@ -872,68 +872,13 @@ function resourcePlan(env){
     P:     env==="LowP"    ? {n:11,y0:1, y1:14 } : {n:40,y0:1,y1:26}
   };
 }
-/* ================= procedural roots =================
-   The growth animation used to replay raw OpenSimRoot geometry: long straight runs grown inside a
-   26 cm box, which never looked like a root. These are drawn to look like one, and shaped by the
-   six cards. Same output format as the data files: roots[{c, p:[[x,y,0,birthDay,radius]...]}].
-   Units: cm, y negative = down, radius cm (>=0.04 axis, 0.03 side root, 0.02 fine root). */
-function procRoots(p, seed){
-  const r=rng(seed);
-  const deep=p.depth!=="Sh", fast=p.speed==="Fa", bushy=p.bush!=="Sp";
-  const rate=fast?4.3:3.0, latRate=fast?1.5:1.05, fineRate=0.75;   // cm per day
-  const grav=deep?0.032:0.004;                                      // pull toward vertical, per cm
-  const lenMul=deep?1:0.72;                                          // shallow strategies spend on width, not depth
-  const STEP=1.0, roots=[];
-  /* grow one root: heading theta (radians from straight down, + = right) wanders slowly, and
-     gravity steers it back toward vertical a little every centimetre */
-  function grow(x,y,theta,birth,len,rad,cmPerDay,lvl,cls){
-    const pts=[[x,y,0,birth,rad]]; let t=birth, bias=0;
-    const g=grav*(lvl===0?1:0.55), n=Math.round(len/STEP);
-    for(let i=0;i<n;i++){
-      bias=bias*0.92+(r()-0.5)*0.045;
-      theta=theta*(1-g)+bias+(r()-0.5)*0.06-0.0025*x;             // the last term keeps the fan within the frame
-      if(!deep && lvl===0 && y<-38) theta+=Math.sign(theta||x||1)*0.05*Math.min(1,(-38-y)/20);   // shallow axes flatten out
-      if(y>-3 && Math.abs(theta)>1.15) theta*=0.85;                // never crawl along the surface
-      if(Math.abs(theta)>1.5) theta=Math.sign(theta)*1.5;
-      x+=Math.sin(theta)*STEP; y-=Math.cos(theta)*STEP;
-      t+=STEP/cmPerDay; if(t>40) break;
-      pts.push([x,y,0,t,rad]);
-    }
-    roots.push({c:cls,p:pts}); return pts;
-  }
-  /* side roots emerge a few days behind the tip, spaced along the parent; Bushy packs them tight */
-  function laterals(pts, spacing, len, rad, lvl){
-    let acc=spacing*r();
-    for(let i=2;i<pts.length;i++){ acc+=STEP; if(acc<spacing) continue; acc=0;
-      const [x,y,,tb]=pts[i], emerge=tb+3.5+r()*2.5; if(emerge>38.5) continue;
-      const side=r()<0.5?-1:1, ang=side*(0.85+r()*0.55), L=len*(0.45+r()*0.9);
-      const lp=grow(x,y,ang,emerge,L,rad,lvl===1?latRate:fineRate,lvl,lvl===1?-40:-41);
-      if(lvl===1 && bushy && lp.length>5 && r()<0.35) laterals(lp,2.4,2.4,0.02,2);
-    }
-  }
-  const axes=[];
-  // primary and seminal roots, from the seed on day 0
-  axes.push(grow((r()-0.5)*0.6,-2.5,(r()-0.5)*0.15,0,rate*40*lenMul,0.08,rate,0,-2));
-  for(let i=0;i<4;i++) axes.push(grow((r()-0.5)*1.6,-2.5,(i<2?-1:1)*(0.45+r()*0.5)*(deep?0.75:1.4),0.6+r()*0.8,rate*38*lenMul,0.065,rate*0.9,0,-5));
-  // nodal roots in whorls from the crown, one whorl every ~5 days, thicker each time; brace roots last
-  const whorls=[[7,4,0.09],[12,5,0.11],[17,6,0.13],[22,7,0.16],[27,8,0.19],[32,8,0.23]];
-  whorls.forEach(([day,n,rad],w)=>{
-    for(let i=0;i<n;i++){
-      const a0=(i/n)*6.283+r()*0.5;                                  // where around the stem it comes out
-      const theta=Math.sin(a0)*((deep?0.36:1.2)+r()*0.22);            // seen from the side, so some look vertical
-      axes.push(grow(Math.cos(a0)*0.9+Math.sin(a0)*0.5,-0.6-w*0.35,theta,day+r()*1.8,rate*(40-day)*lenMul,rad,rate*(0.85+0.3*r()),0,-20-w));
-    }
-  });
-  axes.forEach(a=>laterals(a, bushy?3.4:8.5, bushy?7:5, 0.03, 1));
-  return {roots, endTime:40};
-}
 /* roots are drawn pale, like a real washed root, and only take on colour where they drink */
 function rootStroke(lctx, soilY, H){
   const g=lctx.createLinearGradient(0, soilY, 0, H);
   g.addColorStop(0, "#faf5ea"); g.addColorStop(1, "#e4d8c0");
   return g;
 }
-const TINT={water:"140,212,255", N:"255,232,130", P:"255,105,105"};
+const TINT={water:"120,205,255", N:"205,240,110", P:"255,95,95"};
 function tintRoot(lctx, x, y, type, r){
   // paint only onto pixels that already hold root, so the root itself turns blue / yellow / red
   lctx.save(); lctx.globalCompositeOperation="source-atop"; lctx.globalAlpha=1;
@@ -985,28 +930,49 @@ async function runSim(){
   const myCode=comboCode(), champCode=bestComboOf(curEnv);
   const panels=[ {label:"YOUR ROOT", p:Object.assign({},picks), code:myCode},
                  {label: champCode===myCode ? "CHAMPION — that's YOU! 🏆" : "CHAMPION ROOT 🏆", p:picksOf(champCode), code:champCode} ];
-  // identical randomness in both panels, so the only thing that differs is the cards
-  panels.forEach(P=>{ P.data=procRoots(P.p, 1000+curEnv.length*77); });
+  await Promise.all(panels.map(async P=>{ try{ P.data=await loadRoots(rootDataKey(shapeOf(P.p),curEnv)); }catch(e){ P.data=null; } }));
 
   let maxD=40, maxHW=8;
   panels.forEach(P=>{
-    P.yMul=1; P.xMul=1;
+    /* The 16 real OSR geometries barely differ in depth (gravitropism pulls them all down), so the
+       Deep/Shallow card would be invisible. Stretch the real root to match the card that was picked. */
+    const shallow=P.p.depth==="Sh";
+    P.yMul= shallow?0.48:1.0; P.xMul= shallow?1.9:1.25;      // wider, so roots stop piling on each other
     P.thickMul=(P.p.thick==="Th")?1.4:(P.p.thick==="Sk")?0.72:1;
     P.sparse=P.p.bush==="Sp"; P.airy=P.p.air==="Ai";
-    // every segment remembers its root and its place along it, so colour can run along the root later
+    /* A real 40-day maize system here is ~35,000 roots, 98% of them hair-thin laterals. Drawn
+       one-to-one they fuse into a white clump, so: main roots are kept whole, laterals are thinned
+       (Bushy keeps ~28%, Sparse ~9%) and drawn faint, and every segment remembers which root it
+       belongs to so colour can run along that root later. */
     P.segs=[]; P.byRoot=[];
-    P.data.roots.forEach((r,ri)=>{
-      const maxR=r.p[0][4];
-      const tier = maxR>=0.04 ? 0 : maxR>=0.03 ? 1 : 2;
-      const R=P.byRoot.length; P.byRoot.push([]); P.byRoot[R].n=r.p.length-1;
+    if(P.data) P.data.roots.forEach((r,ri)=>{
+      /* what this root is, from its radius: ~80 axes (nodal/brace/seminal, r>=0.04), ~560 first-order
+         laterals (0.03), ~35,000 fine laterals (0.01-0.02). Each tier is drawn differently, and the
+         fine tiers are thinned so they read as threads instead of a mat. */
+      const maxR=r.p.reduce((m,q)=>Math.max(m,q[4]||0),0);
+      const tier = maxR>=0.04 ? 0 : maxR>=0.03 ? 1 : maxR>=0.02 ? 2 : 3;
+      const keep = [1000, P.sparse?90:220, P.sparse?4:16, P.sparse?1:4][tier];   // per mille
+      if((ri*13)%1000 >= keep) return;
+      const lateral=tier;
+      // laterals in the data run long and straight and cross each other into a hatch; showing only
+      // their first half turns them into the short side branches a real root shows
+      const nPts = tier===0 ? r.p.length : Math.min(r.p.length, Math.max(3, Math.round(r.p.length*0.5)));
+      const R=P.byRoot.length; P.byRoot.push([]); P.byRoot[R].n=nPts-1;
+      /* OpenSimRoot grows these inside a box (13 cm walls, 150 cm floor), so real roots pile up
+         against flat sides and a flat bottom. Give each root its own spread and a top-wide,
+         bottom-narrow taper so the system fans out like one growing in open ground. */
+      const jx=0.55+0.8*((ri*7919)%1000)/1000, jy=0.86+0.22*((ri*104729)%1000)/1000;
+      // the data stores roots as long straight runs; a real root wanders. Give each root its own
+      // gentle wave (amplitude ~1-2 cm, wavelength ~20-40 cm) so it undulates instead of ruling a line
+      const wA=(tier===0?1.3:0.6)+1.0*((ri*3571)%1000)/1000, wL=20+20*((ri*6007)%1000)/1000, wP=6.283*((ri*911)%1000)/1000;
+      const fx=(x,y)=>x*jx*(1-0.45*Math.min(1,-y/150)) + wA*Math.sin(-y*6.283/wL+wP)*Math.min(1,-y/12), fy=y=>y*jy;
       P.byRoot[R].z=((ri*2654435)%1000)/1000;                    // 0 = far back in the soil, 1 = right at the front
-      for(let i=1;i<r.p.length;i++){ const a=r.p[i-1],b=r.p[i];
+      for(let i=1;i<nPts;i++){ const a=r.p[i-1],b=r.p[i];
         P.byRoot[R].push(P.segs.length);
-        P.segs.push([a[0],a[1],b[0],b[1],Math.max(a[3],b[3]),b[4],tier,R,i-1]);
-        maxD=Math.max(maxD,-b[1]); maxHW=Math.max(maxHW,Math.abs(b[0])); }
+        P.segs.push([fx(a[0],a[1]),fy(a[1]),fx(b[0],b[1]),fy(b[1]),Math.max(a[3],b[3]),b[4],lateral,R,i-1]);
+        maxD=Math.max(maxD,-fy(b[1])*P.yMul); maxHW=Math.max(maxHW,Math.abs(fx(b[0],b[1]))*P.xMul); }
     });
     P.segs.sort((x,y)=>x[4]-y[4]);
-    P.endDay=P.data.endTime||40;
     P.endDay=(P.data&&P.data.endTime)||40;
   });
   // one shared ruler for both panels, zoomed so the deeper of the two roots fills its panel
@@ -1069,7 +1035,7 @@ async function runSim(){
     l.globalCompositeOperation="source-over"; l.lineCap="round"; l.lineJoin="round";
     const body=`rgb(${mix(128,222,z)},${mix(106,201,z)},${mix(74,160,z)})`;      // dark tan (back) -> light tan (front)
     const lit =`rgb(${mix(170,250,z)},${mix(150,242,z)},${mix(118,226,z)})`;
-    if(s[6]===1){ l.globalAlpha=(0.28+0.42*z)*P.mainA; l.strokeStyle=lit; l.lineWidth=w; path(0,0); return; }
+    if(s[6]===1){ l.globalAlpha=(0.35+0.45*z)*P.mainA; l.strokeStyle=lit; l.lineWidth=w; path(0,0); return; }
     if(s[6]>=2){ l.globalAlpha=(0.25+0.4*z)*P.latA*1.6; l.strokeStyle="#f7efdd"; l.lineWidth=w; path(0,0); return; }
     if(z>0.45){ l.globalAlpha=0.16*P.mainA; l.strokeStyle="#2a1a0a"; l.lineWidth=w+3.5; path(0.7,1.0); } // shadow, front axes only
     const dz = z<0.35 ? 0.45 : 1;                                // back axes sink into the soil
@@ -1085,11 +1051,11 @@ async function runSim(){
   /* water flows from where it was taken up toward the plant, so the colour runs UP the root and
      fades out: a gradient along the root, painted only onto root pixels */
   function drinkAlong(P,s,type,sc){
-    const l=P.l, ids=P.byRoot[s[7]], k=s[8], span=Math.min(k+1, s[6]?14:46);
+    const l=P.l, ids=P.byRoot[s[7]], k=s[8], span=Math.min(k+1, s[6]?20:70);
     l.globalCompositeOperation="source-atop";
     for(let j=0;j<span;j++){
       const q=P.segs[ids[k-j]], f=1-j/span;
-      l.globalAlpha=0.95*f*f+0.05; l.strokeStyle=`rgb(${TINT[type]})`; l.lineWidth=segWidth(P,q)+1.6;
+      l.globalAlpha=0.97*f+0.03; l.strokeStyle=`rgb(${TINT[type]})`; l.lineWidth=segWidth(P,q)+2.2;
       l.beginPath(); l.moveTo(P.PX(q[0]),P.PY(q[1])); l.lineTo(P.PX(q[2]),P.PY(q[3])); l.stroke();
     }
     l.globalAlpha=1; l.globalCompositeOperation="source-over";

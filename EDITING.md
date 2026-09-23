@@ -1,6 +1,6 @@
-# Editing the Root Game — a guide for non-programmers
+# Editing Root Race — a guide for non-programmers
 
-The whole Root Game is **one file**, `root-architect.html`, plus a data folder, `ra-data/`.
+The whole of Root Race is **one file**, `root-architect.html`, plus a data folder, `ra-data/`.
 You can change almost everything with a text editor. This page says where each thing lives,
 how to see your change, and how to publish it.
 
@@ -33,6 +33,9 @@ Search (Ctrl+F) for the text in the **Search for** column.
 | Rooty's Story — the pictures | `function buildScene(sc){` | One `if(sc.type==="…")` block per page type. |
 | How fast the narrator talks | `const NARR_RATE=` | 0.86 now; 1.0 is normal speed. |
 | The lesson text after a harvest | `function lessonText(` | Builds the "great call / cost you" lines from the score table. |
+| The one-sentence REASON shown under each card after a harvest | `const REASON={` | 12 cards × 4 fields; plain sentences a child can repeat. |
+| The statistics bars after a harvest | `function statsHTML(` | Which rows appear and how they are labelled. |
+| The leaf symptoms when a root is failing its field | `function leafColours(` | Purple for low P, yellow old leaves for low N, dull for drought. |
 | How much water / N / P is in the soil, and how deep | `function resourcePlan(env){` | `n` = number of dots, `y0`–`y1` = depth band in cm, per field. |
 | The colours roots turn when they drink | `const TINT={` | Blue / yellow-green / red as RGB. |
 | How long the growth animation runs | `DUR=14000` | Milliseconds for the 40 simulated days. |
@@ -113,7 +116,7 @@ For the booth laptop, just copy the whole folder again.
 
 | Path | Meaning |
 |---|---|
-| `root-architect.html` | the Root Game (everything: screens, story, wheel, simulation, scoring, leaderboard) |
+| `root-architect.html` | Root Race (everything: screens, story, wheel, simulation, scoring, leaderboard) |
 | `ra-data/scores.js` | generated score table — 64 designs × 4 fields, grams |
 | `ra-data/roots/*.js` | 16 real OpenSimRoot root geometries the growth animation replays |
 | `ra-data/manifest.js` | list of which geometry files exist |
@@ -124,7 +127,7 @@ For the booth laptop, just copy the whole folder again.
 | `cluster/genscores6.py` | the scoring model (see §3) |
 | `cluster/` (everything else) | how the 64 OpenSimRoot runs were built and run on the cluster — reference, not needed to play or edit the game |
 | `amazing-roots-games.html` | the separate 3-game menu for the same booth |
-| `Start-Root-Game.bat` | booth launcher: opens the Root Game full screen in Edge with music allowed to start by itself |
+| `Start-Root-Race.bat` | booth launcher: opens Root Race full screen in Edge with music allowed to start by itself |
 
 ---
 

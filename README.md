@@ -1,4 +1,4 @@
-# 🌽 Amazing Roots! + Root Game — CAFNR Showcase 2026
+# 🌽 Amazing Roots! + Root Race — CAFNR Showcase 2026
 
 Browser games that teach kids (K–5) about plant roots, built for the CAFNR Showcase
 outreach booth (Division of Plant Science & Technology, University of Missouri — Sidhu Lab).
@@ -8,7 +8,7 @@ Two independent, fully offline games live in this repo:
 | File | What it is |
 |------|------------|
 | `amazing-roots-games.html` | **Amazing Roots!** — a 3-game menu: *Grow Your Root!*, *Label the Root!*, *Farm Boss!* (one self-contained file) |
-| `root-architect.html` + `ra-data/` | **Root Game** — design a maize root, watch it grow beside the champion root, match your field, top the leaderboard |
+| `root-architect.html` + `ra-data/` | **Root Race** — design a maize root, watch it grow beside the champion root, match your field, top the leaderboard |
 
 **Want to change something?** Read [`EDITING.md`](EDITING.md) — it is written for people who
 are not programmers and says exactly where each piece lives.
@@ -16,7 +16,7 @@ are not programmers and says exactly where each piece lives.
 ## ▶️ How to run (booth mode, no internet)
 
 1. Copy the **whole `RootGames` folder** (the Root Game needs `ra-data/`).
-2. **Root Game:** double-click **`Start-Root-Game.bat`** — it opens full screen with the music
+2. **Root Race:** double-click **`Start-Root-Race.bat`** — it opens full screen with the music
    already playing. (Or double-click `root-architect.html` and press **F11**; then the music
    starts on the first tap, via a "TAP TO START" screen.) Quit with **Alt+F4**.
 3. **Amazing Roots!:** double-click `amazing-roots-games.html`, press **F11**.
@@ -30,7 +30,7 @@ are not programmers and says exactly where each piece lives.
 | **Label the Root!** | Drag labels (Skin/epidermis, Sponge/cortex, Water Pipes/xylem, Food Pipes/phloem) onto a maize root cross-section. |
 | **Farm Boss!** | Run a farm on a $100 budget from prep to harvest. Pick seeds by *root traits*, survive drought/storms/disease, make a profit. |
 
-## 🌱 Root Game
+## 🌱 Root Race
 
 **The lesson:** there is no single best root — a clever root matches its **field**.
 
@@ -44,12 +44,15 @@ are not programmers and says exactly where each piece lives.
 Each neighbouring field differs by exactly one card, so a child who plays twice discovers
 one new thing rather than being told six.
 
-**Flow:** animated title (Rooty & friends) → *Rooty's Story* (a continuous ~80-second film that
-plays before the first game; the full 3-minute version is behind a button) → spin the **field
-wheel** (a real root cross-section micrograph is the hub) → pick **6 trait cards**, each with its
-own root avatar (Deep/Shallow · Speedy/Steady · Fuzzy/Smooth · Skinny/Thick · Bushy/Sparse ·
-Airy/Solid) → watch **your root and the champion root grow side by side** on identical soil →
-harvest → score + a lesson that says which cards helped or hurt → daily leaderboard.
+**Flow:** start screen with today's best scores → PLAY → *Rooty's Story* (a continuous ~80-second
+film, every game) → the child types their **name** → spin the **field wheel** (a real root
+cross-section micrograph is the hub) → climb **6 steps**, one trait card per step, each option with
+its own root avatar (Deep/Shallow · Speedy/Steady · Fuzzy/Smooth · Skinny/Thick · Bushy/Sparse ·
+Airy/Solid) → watch **their root and the champion root race side by side** on identical soil, with
+live bars showing what each has taken up → harvest → score, a **statistics comparison** (water, N, P
+taken, deepest root, amount of root, plant weight) and **a reason for every one of the six cards**
+→ save → back to the start, where the board now shows them. The full 3-minute story is offered at
+the end, on the leaderboard screen.
 
 **What the simulation screen shows (and what it means):**
 - The root geometry is **real OpenSimRoot output** (`ra-data/roots/*.js`, 16 designs, replayed
@@ -62,7 +65,9 @@ harvest → score + a lesson that says which cards helped or hurt → daily lead
   water, yellow-green for nitrogen, red for phosphorus; each uptake sends a wave of colour
   through the whole system.
 - The shoot is a **40-day corn plant** (vegetative, ~V8–V10: leaves only, no tassel, no ear). It
-  grows bigger and greener when its root feeds it well.
+  grows bigger and greener when its root feeds it well — and when the root is failing its field it
+  shows the real symptom: **purple leaves** (low P), **yellow lower leaves** (low N), **wilting**
+  (drought).
 
 **Scoring (be aware when reading results):**
 - The **biomass score is a hand-crafted teaching model**, not the simulation's output. It is
@@ -121,7 +126,7 @@ pages the short cut uses are listed there; record those and the booth version is
 ## 🛠️ Tech
 
 Plain HTML/CSS/JS + SVG/SMIL animation — no libraries, no build step, no server.
-Everything for the Root Game is in one file, `root-architect.html`, plus data in `ra-data/`.
+Everything for Root Race is in one file, `root-architect.html`, plus data in `ra-data/`.
 `ra-data/roots/*.js` are lazy-loaded per design; `ra-data/root-hub.png` (root cross-section)
 and `ra-data/maize-hero.svg` (title art) are the only images.
 

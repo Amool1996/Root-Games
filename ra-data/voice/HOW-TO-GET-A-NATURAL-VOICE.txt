@@ -1,0 +1,46 @@
+HOW TO GET A NATURAL, HUMAN-SOUNDING VOICE FOR ROOTY'S STORY
+=============================================================
+
+The game narrates itself with a voice built into Windows. On most laptops that
+is "Zira", which sounds like a computer. There are three ways up from there,
+from easiest to best.
+
+
+OPTION 1 - FREE, AUTOMATIC, NEEDS INTERNET AT THE BOOTH
+--------------------------------------------------------
+Start the game with  Start-Root-Race.bat  (it opens Microsoft Edge). If the
+laptop is online, Edge offers Microsoft's "Natural" voices and the game picks
+one automatically (Aria or Jenny - warm, clear, American English). Nothing to
+install, nothing to record. If the internet drops, it quietly falls back to
+Zira. Test it once at the venue: press PLAY and listen to the first page.
+
+
+OPTION 2 - GENERATE MP3s ONLINE ONCE, THEN IT WORKS OFFLINE FOREVER
+--------------------------------------------------------------------
+Any text-to-speech website that lets you download MP3s will do. Free tiers that
+are enough for this (about 15 short clips):
+
+  - Microsoft Azure "Speech Studio" (speech.microsoft.com) - voices "Jenny",
+    "Aria", or "Ana" (a child's voice kids like)
+  - ElevenLabs (elevenlabs.io) - very natural; pick a warm, friendly female voice
+  - Google Cloud Text-to-Speech demo, or any "text to speech mp3" site
+
+Steps:
+  1. Open README.txt in this folder. It has the exact words for every page.
+     If you only want the booth version, use the SHORT wording for the eight
+     pages listed under "WHICH ONES MATTER MOST".
+  2. Paste one page's text, choose the voice, set the speed a little slower
+     than normal (about 0.9x), and download the MP3.
+  3. Save it in THIS folder with the page's name: p01.mp3, p08.mp3, ...
+  4. Open the game. Any page that has a file uses it; the rest use the
+     built-in voice. No settings to change.
+
+Please do not use a celebrity's voice or a cartoon character's voice, even if
+a website offers it. That is someone's likeness and is not ours to use at a
+university event. A warm "kind teacher" voice is exactly right for this age.
+
+
+OPTION 3 - A REAL PERSON (BEST FOR SMALL CHILDREN)
+---------------------------------------------------
+Someone in the lab reads the eight short pages into a phone. See README.txt
+("HOW TO RECORD"). Ten minutes, and it beats every synthetic voice.

@@ -1,6 +1,6 @@
 @echo off
 REM ------------------------------------------------------------------------------
-REM  ROOT GAME - booth launcher
+REM  ROOT RACE - booth launcher
 REM  Opens the game full screen in Microsoft Edge with sound allowed to start on its
 REM  own, so the title music plays the moment the screen comes up (no tap needed).
 REM  Double-click this file. Press Alt+F4 to quit.

@@ -99,6 +99,15 @@ two largest vtp files per run rather than trusting a filename.
 
 Raw cluster outputs (per-day `.vtp`/`.rsml`, several GB) are **not** in this repo.
 
+## 🎵 Music & sound
+
+Every screen has its own music, synthesized in the browser (no files, works offline): bouncy on the
+title, a soft music box under Rooty's Story, carnival oom-pah on the field wheel with ticks and a
+fanfare on the spin, rising arpeggios while the roots grow (each drink pops), and a celebration on
+the score and leaderboard. Music ducks under the narration. The speaker button (top right) mutes
+everything and remembers it. Browsers only allow sound after the first tap, so it starts with the
+first touch. To use real tracks, see [`ra-data/music/README.txt`](ra-data/music/README.txt).
+
 ## 🔊 Voice
 
 Rooty's Story narrates itself with a female voice built into Windows (Zira). For a real human

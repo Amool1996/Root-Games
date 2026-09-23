@@ -157,12 +157,15 @@
   .letterCol { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .letter { font-size:56px; background:#fffbe8; border-radius:12px; width:80px; text-align:center; font-weight:900;}
   .arrowB { font-size:30px; padding:2px 22px; border-radius:10px; border:none; background:#7ec850; color:#fff; cursor:pointer;}
+  #muteBtn { position:absolute; top:12px; right:12px; z-index:50; font-size:22px; padding:8px 14px; border:none;
+    border-radius:12px; background:rgba(0,0,0,.45); color:#fff; cursor:pointer; }
   #homeBtn { position:absolute; top:12px; left:12px; z-index:50; font-size:22px; padding:8px 16px;
     border-radius:12px; border:none; background:rgba(0,0,0,.45); color:#fff; cursor:pointer; display:none;}
 </style>
 </head>
 <body>
 <button id="homeBtn" onclick="go('title')">🏠 Menu</button>
+<button id="muteBtn" onclick="Music.toggle()" title="Music on/off">🔊</button>
 
 <div class="screen on" id="s_title">
   <img id="heroImg" src="ra-data/maize-hero.svg" alt="">
@@ -279,6 +282,7 @@
 
 <script src="ra-data/scores.js?v=5"></script>
 <script src="ra-data/manifest.js?v=4"></script>
+<script src="ra-data/music/manifest.js"></script>  <!-- optional: real MP3s, see ra-data/music/README.txt -->
 <script>
 "use strict";
 /* ================= config ================= */
@@ -769,7 +773,7 @@ function buildSpinner(){
 function drawWheel(){ buildSpinner(); }   // alias kept for init/startRound
 let spinning=false;
 function spin(){
-  if(spinning) return; spinning=true;
+  if(spinning) return; spinning=true; Music.spinTicks(4100);
   const pick = Math.floor(Math.random()*4);
   const env = ENV_ORDER[pick];
   const target = 360*5 + WHEEL_ANGLE[env];
@@ -784,7 +788,7 @@ function spin(){
     spinning=false; curEnv=env;
     const E=ENVS[curEnv];
     document.querySelectorAll(".wSlot").forEach(n=>n.classList.remove("won"));
-    document.getElementById("wc_"+curEnv).classList.add("won");
+    document.getElementById("wc_"+curEnv).classList.add("won"); Music.sfx("fanfare");
     document.getElementById("wheelResult").innerHTML=`<b style="font-size:1.3em">${E.name}!</b><br>${E.hint}`;
     document.getElementById("spinBtn").style.display="none";
     document.getElementById("wheelNext").style.display="inline-block";
@@ -801,7 +805,7 @@ function buildCards(){
     [c.a,c.b].forEach(o=>{
       const b=document.createElement("button"); b.className="card"; b.id="card_"+o.code;
       b.innerHTML=`<span class="av">${ROOT_ART[o.code]||""}</span><b>${o.label}</b><br><small>${CARDINFO[o.code]}</small>`;
-      b.onclick=()=>{ picks[c.key]=o.code;
+      b.onclick=()=>{ Music.sfx("click"); picks[c.key]=o.code;
         document.getElementById("card_"+c.a.code).classList.toggle("sel", o.code===c.a.code);
         document.getElementById("card_"+c.b.code).classList.toggle("sel", o.code===c.b.code);
         document.getElementById("runBtn").disabled = Object.keys(picks).length<CARDS.length;
@@ -1059,7 +1063,7 @@ async function runSim(){
         drawSeg(P,s,x2,y2);
         for(const d of P.dots){ if(d.gone) continue;                // the growing tip drinks what it reaches
           const gR = grab*(P.fuzzy ? (d.type==="water"?1.25:2.0) : 0.8);
-          if(Math.abs(d.x-x2)<gR && Math.abs(d.y-y2)<gR){ d.gone=true;
+          if(Math.abs(d.x-x2)<gR && Math.abs(d.y-y2)<gR){ d.gone=true; Music.pop();
             P.sparks.push({x:d.x,y:d.y,c:RES[d.type].c,t0:t}); drinkAlong(P,s,d.type,sc);
             P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t}); } }
       }
@@ -1175,8 +1179,8 @@ function showResults(){
   // count-up (with guaranteed final value)
   const el=document.getElementById("scoreBig"); let v=0;
   const finalTxt=score+(score===100?" 🏆":" pts");
-  const iv=setInterval(()=>{ v=Math.min(score,v+3); el.textContent=(v>=score)?finalTxt:String(v);
-    if(v>=score) clearInterval(iv); },28);
+  const iv=setInterval(()=>{ v=Math.min(score,v+3); Music.sfx("count"); el.textContent=(v>=score)?finalTxt:String(v);
+    if(v>=score){ clearInterval(iv); Music.sfx(score===100?"fanfare":"chime"); } },28);
   setTimeout(()=>{ clearInterval(iv); el.textContent=finalTxt; }, 1600);
 }
 function traitMeta(){ // build {code:{flip,name,emoji}} from CARDS
@@ -1670,18 +1674,18 @@ function pickNarrator(){
 }
 try{ if(window.speechSynthesis) speechSynthesis.onvoiceschanged=()=>{ narrVoice=null; pickNarrator(); }; }catch(e){}
 function stopNarration(){
-  narrSeq++;
+  narrSeq++; Music.duck(false);
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
   if(narrAudio){ try{ narrAudio.pause(); }catch(e){} narrAudio=null; }
 }
 /* speak the sentences one at a time, pausing between them the way a teacher does */
 function speakLines(lines, onDone){
-  const mine=narrSeq;
+  const mine=narrSeq; Music.duck(true);
   if(!window.speechSynthesis || !lines || !lines.length){ if(onDone) onDone(false); return; }
   let i=0;
   const next=()=>{
     if(mine!==narrSeq) return;                       // a new page took over
-    if(i>=lines.length){ if(onDone) onDone(true); return; }
+    if(i>=lines.length){ Music.duck(false); if(onDone) onDone(true); return; }
     let u; try{ u=new SpeechSynthesisUtterance(lines[i++]); }catch(e){ if(onDone) onDone(false); return; }
     const v=pickNarrator(); if(v) u.voice=v;
     u.rate=NARR_RATE; u.pitch=NARR_PITCH; u.volume=1;
@@ -1698,12 +1702,12 @@ function narrateScene(sc, onDone){
   if(sc.id && voiceFiles!==false){   // a real recording wins if one has been supplied
     let a; try{ a=new Audio("ra-data/voice/"+sc.id+".mp3"); }catch(e){ a=null; }
     if(a){
-      narrAudio=a;
+      narrAudio=a; Music.duck(true);
       let fellBack=false;   // a missing file fires BOTH onerror and the play() rejection —
       const fallback=()=>{ if(fellBack) return; fellBack=true;   // without this guard it narrates twice
         voiceFiles=false;                                        // no recordings here — stop looking
         if(mine!==narrSeq) return; narrAudio=null; speakLines(sayOf(sc),onDone); };
-      a.onended=()=>{ if(mine===narrSeq){ narrAudio=null; if(onDone) onDone(true); } };
+      a.onended=()=>{ Music.duck(false); if(mine===narrSeq){ narrAudio=null; if(onDone) onDone(true); } };
       a.onplaying=()=>{ voiceFiles=true; };
       a.onerror=fallback;
       const p=a.play(); if(p&&p.catch) p.catch(fallback);
@@ -1766,11 +1770,108 @@ function introEnd(){ storySeen=true; clearTimeout(introTimer); stopNarration(); 
 function toggleVoice(){ introVoice=!introVoice; document.getElementById("introVoiceBtn").textContent=introVoice?"🔊 Voice":"🔇 Voice";
   if(!introVoice) stopNarration(); else introRender(); }
 
+/* ================= MUSIC & SOUND =================
+   Everything here is synthesized with the Web Audio API, so it works offline from this one file.
+   Each screen has its own loop, and there are sound effects for clicks, the spin, drinking and the
+   score. Music ducks under Rooty's narration. Browsers only allow sound after the first tap, so the
+   first touch on the title screen starts it. To use real music instead, drop MP3s into
+   ra-data/music/ and list them in ra-data/music/manifest.js - a listed track replaces its loop. */
+const SCENE_MUSIC={title:"title", intro:"story", wheel:"wheel", design:"design", sim:"grow", results:"party", name:"party", lb:"party"};
+const Music=(()=>{
+  let ctx=null, master=null, mg=null, sg=null, timer=null, scene=null, pat=null, step=0, nextT=0, fileEl=null, lastPop=0;
+  let muted=false; try{ muted=localStorage.getItem("ra_mute")==="1"; }catch(e){}
+  const N=n=>440*Math.pow(2,(n-69)/12), _=null;
+  /* two-bar loops in 16th steps; mel/bass are MIDI notes (C major / pentatonic, so nothing can clash) */
+  const P={
+    title:{bpm:128, wave:"triangle", vol:.42, hats:true,                        // bouncy and bright
+      mel:[72,_,76,_,79,_,76,_, 81,_,79,_,76,_,74,_, 72,_,74,_,76,_,79,_, 81,_,79,79,76,_,74,_],
+      bass:[36,_,_,_,36,_,_,_,43,_,_,_,43,_,_,_,45,_,_,_,45,_,_,_,41,_,_,_,41,_,_,_]},
+    story:{bpm:84, wave:"sine", vol:.26, hats:false, bell:true,                // soft music box under the voice
+      mel:[72,_,_,_,76,_,_,_,79,_,_,_,76,_,_,_, 74,_,_,_,77,_,_,_,81,_,_,_,77,_,_,_],
+      bass:[48,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_, 53,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_]},
+    wheel:{bpm:132, wave:"square", vol:.2, hats:true,                          // carnival oom-pah
+      mel:[79,_,76,_,72,_,76,_,79,_,76,_,72,_,_,_, 81,_,77,_,74,_,77,_,81,_,77,_,74,_,_,_],
+      bass:[36,_,_,_,43,_,_,_,36,_,_,_,43,_,_,_,41,_,_,_,48,_,_,_,41,_,_,_,48,_,_,_]},
+    design:{bpm:108, wave:"triangle", vol:.34, hats:false,                     // curious, thinking
+      mel:[72,_,_,74,_,_,76,_,_,_,79,_,_,_,_,_, 76,_,_,74,_,_,72,_,_,_,69,_,_,_,_,_],
+      bass:[45,_,_,_,_,_,_,_,41,_,_,_,_,_,_,_,43,_,_,_,_,_,_,_,36,_,_,_,_,_,_,_]},
+    grow:{bpm:100, wave:"sine", vol:.3, hats:false, bell:true,                 // rising arpeggios: something is growing
+      mel:[60,64,67,72, 64,67,72,76, 67,72,76,79, 72,76,79,84, 83,79,76,72, 79,76,72,67, 76,72,67,64, 72,67,64,60],
+      bass:[36,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_, 41,_,_,_,_,_,_,_,43,_,_,_,_,_,_,_]},
+    party:{bpm:138, wave:"triangle", vol:.44, hats:true,                       // celebration
+      mel:[76,_,79,_,84,_,79,_, 81,_,84,_,79,_,76,_, 74,_,76,_,79,_,81,_, 84,_,_,_,84,84,_,_],
+      bass:[36,_,_,_,36,_,_,_,41,_,_,_,41,_,_,_,43,_,_,_,43,_,_,_,36,_,_,_,36,_,_,_]}
+  };
+  function ensure(){
+    if(ctx) return true;
+    try{ ctx=new (window.AudioContext||window.webkitAudioContext)();
+      master=ctx.createGain(); master.gain.value=muted?0:1; master.connect(ctx.destination);
+      mg=ctx.createGain(); mg.gain.value=1;  mg.connect(master);     // music
+      sg=ctx.createGain(); sg.gain.value=.9; sg.connect(master);     // effects
+      return true; }catch(e){ return false; }
+  }
+  function tone(t,midi,dur,type,vol,dest,a){
+    a=a||0.012; const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.value=N(midi);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+a); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(dest); o.start(t); o.stop(t+dur+0.03);
+  }
+  function hat(t,vol){
+    const n=Math.floor(ctx.sampleRate*0.04), b=ctx.createBuffer(1,n,ctx.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+    const s=ctx.createBufferSource(); s.buffer=b; const f=ctx.createBiquadFilter(); f.type="highpass"; f.frequency.value=7000;
+    const g=ctx.createGain(); g.gain.value=vol; s.connect(f); f.connect(g); g.connect(mg); s.start(t);
+  }
+  function playStep(i,t){
+    const spb=60/pat.bpm/4, m=pat.mel[i], b=pat.bass[i];
+    if(m!=null) tone(t,m,pat.bell?spb*3.2:spb*1.7,pat.wave,pat.vol,mg);
+    if(b!=null) tone(t,b,spb*3.6,"triangle",pat.vol*0.9,mg,0.02);
+    if(pat.hats && (i%2===1)) hat(t,0.05);
+  }
+  function tick(){ if(!ctx||!pat) return; const spb=60/pat.bpm/4;
+    while(nextT<ctx.currentTime+0.3){ playStep(step%32,nextT); step++; nextT+=spb; } }
+  function stopLoop(){ if(timer){ clearInterval(timer); timer=null; } pat=null; if(fileEl){ try{ fileEl.pause(); }catch(e){} fileEl=null; } }
+  function startPattern(name){ pat=P[name]||P.title; step=0; nextT=ctx.currentTime+0.06; timer=setInterval(tick,90); tick(); }
+  function play(name){
+    if(name===scene) return; scene=name;
+    if(!ctx) return;                                   // remembered; starts on the first tap
+    stopLoop(); if(ctx.state==="suspended") ctx.resume();
+    const files=window.RA_MUSIC||{};
+    if(files[name]){ fileEl=new Audio("ra-data/music/"+files[name]); fileEl.loop=true; fileEl.volume=muted?0:0.55;
+      fileEl.play().catch(()=>{ fileEl=null; startPattern(name); }); return; }
+    startPattern(name);
+  }
+  function start(){ if(!ensure()) return; if(ctx.state==="suspended") ctx.resume();
+    if(scene && !pat && !fileEl){ const s=scene; scene=null; play(s); } }
+  function duck(on){ if(!ctx) return; mg.gain.setTargetAtTime(on?0.22:1, ctx.currentTime, 0.25); if(fileEl) fileEl.volume=muted?0:(on?0.15:0.55); }
+  function toggle(){ muted=!muted; try{ localStorage.setItem("ra_mute",muted?"1":"0"); }catch(e){}
+    if(ctx) master.gain.setTargetAtTime(muted?0:1, ctx.currentTime, 0.05); if(fileEl) fileEl.volume=muted?0:0.55;
+    const b=document.getElementById("muteBtn"); if(b) b.textContent=muted?"🔇":"🔊"; }
+  function sfx(kind){
+    if(!ctx||muted) return; const t=ctx.currentTime;
+    if(kind==="click") tone(t,88,0.09,"triangle",0.35,sg);
+    else if(kind==="tick"){ hat(t,0.25); tone(t,96,0.05,"square",0.08,sg); }
+    else if(kind==="fanfare"){ [72,76,79,84].forEach((n,i)=>tone(t+i*0.09,n,0.35,"triangle",0.4,sg)); [72,76,79].forEach(n=>tone(t+0.42,n,0.9,"triangle",0.28,sg,0.03)); }
+    else if(kind==="chime"){ tone(t,88,0.9,"sine",0.35,sg); tone(t+0.05,95,0.9,"sine",0.25,sg); tone(t+0.1,100,1.1,"sine",0.2,sg); }
+    else if(kind==="pop"){ const o=ctx.createOscillator(), g=ctx.createGain(); o.type="sine";
+      o.frequency.setValueAtTime(520,t); o.frequency.exponentialRampToValueAtTime(980,t+0.08);
+      g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.22,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.1);
+      o.connect(g); g.connect(sg); o.start(t); o.stop(t+0.12); }
+    else if(kind==="count") tone(t,100,0.04,"square",0.06,sg);
+  }
+  function pop(){ const now=performance.now(); if(now-lastPop<70) return; lastPop=now; sfx("pop"); }
+  function spinTicks(ms){ if(!ctx) return; let t=0, gap=45;                  // ticks slow down as the wheel does
+    const go2=()=>{ if(t>=ms) return; sfx("tick"); gap*=1.055; t+=gap; setTimeout(go2,gap); }; go2(); }
+  return {start, play, duck, toggle, sfx, pop, spinTicks, get muted(){ return muted; }};
+})();
+document.addEventListener("pointerdown", ()=>Music.start(), {passive:true});
+document.addEventListener("keydown", ()=>Music.start());
+
 /* ================= init ================= */
-drawWheel(); buildCards(); buildNameEntry();
+drawWheel(); buildCards(); buildNameEntry(); Music.play("title");
+if(Music.muted) document.getElementById("muteBtn").textContent="🔇";
 document.getElementById("s_design").addEventListener("transitionend",()=>{});
 const _origGo=go;
-go=function(id){ _origGo(id);
+go=function(id){ _origGo(id); Music.play(SCENE_MUSIC[id]||"title");
   if(id!=="intro"){ clearTimeout(introTimer); stopNarration(); }
   if(id==="design"){ const E=ENVS[curEnv];
     document.getElementById("designTitle").innerHTML=`${E.em} ${E.name} — build your root!`;

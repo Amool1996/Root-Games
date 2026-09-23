@@ -37,6 +37,8 @@ Search (Ctrl+F) for the text in the **Search for** column.
 | The colours roots turn when they drink | `const TINT={` | Blue / yellow-green / red as RGB. |
 | How long the growth animation runs | `DUR=14000` | Milliseconds for the 40 simulated days. |
 | The scores (grams per design per field) | *don't edit the file — see §3* | `ra-data/scores.js` is generated. |
+| The music (tempo, notes, volume of each screen's loop) | `const P={` | One block per screen: `bpm`, `vol`, `mel` (melody) and `bass` as MIDI note numbers (72 = middle C's C5). `_` is a rest. |
+| Replace the built-in music with real MP3s | *no code edit* | Put files in `ra-data/music/` and list them in `manifest.js` there — see `ra-data/music/README.txt`. |
 
 If a change breaks the page (blank screen or a button that does nothing), you almost certainly
 deleted a quote, a comma or a bracket. Press **F12** in the browser → **Console** tab: the first
@@ -118,6 +120,7 @@ For the booth laptop, just copy the whole folder again.
 | `ra-data/root-hub.png` | the root cross-section photo in the middle of the wheel |
 | `ra-data/maize-hero.svg` | the maize plant art on the title screen |
 | `ra-data/voice/` | optional MP3 narration (see §4) |
+| `ra-data/music/` | optional MP3 music per screen (built-in music plays otherwise) |
 | `cluster/genscores6.py` | the scoring model (see §3) |
 | `cluster/` (everything else) | how the 64 OpenSimRoot runs were built and run on the cluster — reference, not needed to play or edit the game |
 | `amazing-roots-games.html` | the separate 3-game menu for the same booth |

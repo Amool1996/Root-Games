@@ -1795,7 +1795,7 @@ const Music=(()=>{
     title:{bpm:128, wave:"triangle", vol:.42, hats:true,                        // bouncy and bright
       mel:[72,_,76,_,79,_,76,_, 81,_,79,_,76,_,74,_, 72,_,74,_,76,_,79,_, 81,_,79,79,76,_,74,_],
       bass:[36,_,_,_,36,_,_,_,43,_,_,_,43,_,_,_,45,_,_,_,45,_,_,_,41,_,_,_,41,_,_,_]},
-    story:{bpm:84, wave:"sine", vol:.26, hats:false, bell:true,                // soft music box under the voice
+    story:{bpm:84, wave:"sine", vol:.12, hats:false, bell:true,                // soft music box under the voice
       mel:[72,_,_,_,76,_,_,_,79,_,_,_,76,_,_,_, 74,_,_,_,77,_,_,_,81,_,_,_,77,_,_,_],
       bass:[48,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_, 53,_,_,_,_,_,_,_,_,_,_,_,_,_,_,_]},
     wheel:{bpm:132, wave:"square", vol:.2, hats:true,                          // carnival oom-pah
@@ -1840,7 +1840,8 @@ const Music=(()=>{
     while(nextT<ctx.currentTime+0.3){ playStep(step%32,nextT); step++; nextT+=spb; } }
   function stopLoop(){ if(timer){ clearInterval(timer); timer=null; } pat=null; if(fileEl){ try{ fileEl.pause(); }catch(e){} fileEl=null; } }
   function startPattern(name){ pat=P[name]||P.title; step=0; nextT=ctx.currentTime+0.06; timer=setInterval(tick,90); tick(); }
-  function level(){ return ducked?0.22:1; }
+  function level(){ if(scene==="story") return ducked?0.10:0.4;   // the story is a background hum, always
+    return ducked?0.22:1; }
   function play(name){
     if(name===scene) return; scene=name;
     if(!ctx) return;                                   // remembered; starts on the first tap

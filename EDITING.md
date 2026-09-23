@@ -124,6 +124,7 @@ For the booth laptop, just copy the whole folder again.
 | `cluster/genscores6.py` | the scoring model (see §3) |
 | `cluster/` (everything else) | how the 64 OpenSimRoot runs were built and run on the cluster — reference, not needed to play or edit the game |
 | `amazing-roots-games.html` | the separate 3-game menu for the same booth |
+| `Start-Root-Game.bat` | booth launcher: opens the Root Game full screen in Edge with music allowed to start by itself |
 
 ---
 

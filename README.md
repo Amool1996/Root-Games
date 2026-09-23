@@ -16,8 +16,11 @@ are not programmers and says exactly where each piece lives.
 ## ▶️ How to run (booth mode, no internet)
 
 1. Copy the **whole `RootGames` folder** (the Root Game needs `ra-data/`).
-2. Double-click the `.html` file you want, then press **F11** for fullscreen.
-3. Works with mouse, keyboard and touchscreens. Leaderboards persist per day in `localStorage`.
+2. **Root Game:** double-click **`Start-Root-Game.bat`** — it opens full screen with the music
+   already playing. (Or double-click `root-architect.html` and press **F11**; then the music
+   starts on the first tap, via a "TAP TO START" screen.) Quit with **Alt+F4**.
+3. **Amazing Roots!:** double-click `amazing-roots-games.html`, press **F11**.
+4. Works with mouse, keyboard and touchscreens. Leaderboards persist per day in `localStorage`.
 
 ## 🎮 Amazing Roots! (3 games)
 

@@ -157,6 +157,13 @@
   .letterCol { display:flex; flex-direction:column; align-items:center; gap:6px; }
   .letter { font-size:56px; background:#fffbe8; border-radius:12px; width:80px; text-align:center; font-weight:900;}
   .arrowB { font-size:30px; padding:2px 22px; border-radius:10px; border:none; background:#7ec850; color:#fff; cursor:pointer;}
+  #tapSplash { position:absolute; inset:0; z-index:60; background:rgba(6,12,30,.55); display:none;
+    align-items:center; justify-content:center; cursor:pointer; }
+  .tapCard { background:#fff; color:#1b2a44; font-weight:900; font-size:min(9vw,54px); padding:26px 54px;
+    border-radius:28px; box-shadow:0 14px 40px rgba(0,0,0,.5); text-align:center; animation:tapPulse 1.3s ease-in-out infinite; }
+  .tapHand { font-size:min(14vw,84px); line-height:1; margin-bottom:6px; animation:tapBob .8s ease-in-out infinite; }
+  @keyframes tapPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+  @keyframes tapBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
   #muteBtn { position:absolute; top:12px; right:12px; z-index:50; font-size:22px; padding:8px 14px; border:none;
     border-radius:12px; background:rgba(0,0,0,.45); color:#fff; cursor:pointer; }
   #homeBtn { position:absolute; top:12px; left:12px; z-index:50; font-size:22px; padding:8px 16px;
@@ -166,6 +173,7 @@
 <body>
 <button id="homeBtn" onclick="go('title')">🏠 Menu</button>
 <button id="muteBtn" onclick="Music.toggle()" title="Music on/off">🔊</button>
+<div id="tapSplash" style="display:none"><div class="tapCard"><div class="tapHand">👆</div>TAP TO START</div></div>
 
 <div class="screen on" id="s_title">
   <img id="heroImg" src="ra-data/maize-hero.svg" alt="">
@@ -1251,7 +1259,7 @@ let introFull=false, PLAY=[];
 function capOf(sc){ return (!introFull && sc.capS) ? sc.capS : sc.cap; }
 function sayOf(sc){ return (!introFull && sc.sayS) ? sc.sayS : sc.say; }
 let storySeen=false;
-function startGame(){ if(!storySeen) showIntro(); else startRound(); }
+function startGame(){ showIntro(); }   // every PLAY is a new child: always tell the story ("Skip" is there)
 /* Rooty's Story — a teacher reading to a class. One idea per page.
    `say` is a LIST of sentences so the narrator pauses between them like a real teacher,
    and the page only turns once she has finished speaking. */
@@ -1779,6 +1787,7 @@ function toggleVoice(){ introVoice=!introVoice; document.getElementById("introVo
 const SCENE_MUSIC={title:"title", intro:"story", wheel:"wheel", design:"design", sim:"grow", results:"party", name:"party", lb:"party"};
 const Music=(()=>{
   let ctx=null, master=null, mg=null, sg=null, timer=null, scene=null, pat=null, step=0, nextT=0, fileEl=null, lastPop=0;
+  let ducked=false, switchTok=0;
   let muted=false; try{ muted=localStorage.getItem("ra_mute")==="1"; }catch(e){}
   const N=n=>440*Math.pow(2,(n-69)/12), _=null;
   /* two-bar loops in 16th steps; mel/bass are MIDI notes (C major / pentatonic, so nothing can clash) */
@@ -1831,18 +1840,32 @@ const Music=(()=>{
     while(nextT<ctx.currentTime+0.3){ playStep(step%32,nextT); step++; nextT+=spb; } }
   function stopLoop(){ if(timer){ clearInterval(timer); timer=null; } pat=null; if(fileEl){ try{ fileEl.pause(); }catch(e){} fileEl=null; } }
   function startPattern(name){ pat=P[name]||P.title; step=0; nextT=ctx.currentTime+0.06; timer=setInterval(tick,90); tick(); }
+  function level(){ return ducked?0.22:1; }
   function play(name){
     if(name===scene) return; scene=name;
     if(!ctx) return;                                   // remembered; starts on the first tap
-    stopLoop(); if(ctx.state==="suspended") ctx.resume();
-    const files=window.RA_MUSIC||{};
-    if(files[name]){ fileEl=new Audio("ra-data/music/"+files[name]); fileEl.loop=true; fileEl.volume=muted?0:0.55;
-      fileEl.play().catch(()=>{ fileEl=null; startPattern(name); }); return; }
-    startPattern(name);
+    if(ctx.state==="suspended") ctx.resume();
+    // fade the old loop out (120 ms), THEN start the new one, so two loops never sound together
+    const tok=++switchTok, now=ctx.currentTime;
+    mg.gain.cancelScheduledValues(now); mg.gain.setValueAtTime(mg.gain.value,now); mg.gain.linearRampToValueAtTime(0.0001,now+0.12);
+    setTimeout(()=>{ if(tok!==switchTok) return;
+      stopLoop();
+      const t2=ctx.currentTime; mg.gain.cancelScheduledValues(t2); mg.gain.setValueAtTime(0.0001,t2); mg.gain.linearRampToValueAtTime(level(),t2+0.35);
+      const files=window.RA_MUSIC||{};
+      if(files[name]){ fileEl=new Audio("ra-data/music/"+files[name]); fileEl.loop=true; fileEl.volume=muted?0:(ducked?0.15:0.55);
+        fileEl.play().catch(()=>{ fileEl=null; startPattern(name); }); return; }
+      startPattern(name);
+    }, 140);
   }
+  /* on load: if the browser already allows sound (kiosk launcher), start straight away; otherwise
+     show TAP TO START so the first touch happens on the title screen, not on PLAY */
+  function boot(){ ensure(); const sp=document.getElementById("tapSplash");
+    if(ctx && ctx.state==="running"){ start(); if(sp) sp.style.display="none"; }
+    else if(sp) sp.style.display="flex"; }
   function start(){ if(!ensure()) return; if(ctx.state==="suspended") ctx.resume();
+    const sp=document.getElementById("tapSplash"); if(sp) sp.style.display="none";
     if(scene && !pat && !fileEl){ const s=scene; scene=null; play(s); } }
-  function duck(on){ if(!ctx) return; mg.gain.setTargetAtTime(on?0.22:1, ctx.currentTime, 0.25); if(fileEl) fileEl.volume=muted?0:(on?0.15:0.55); }
+  function duck(on){ ducked=on; if(!ctx) return; mg.gain.setTargetAtTime(level(), ctx.currentTime, 0.25); if(fileEl) fileEl.volume=muted?0:(on?0.15:0.55); }
   function toggle(){ muted=!muted; try{ localStorage.setItem("ra_mute",muted?"1":"0"); }catch(e){}
     if(ctx) master.gain.setTargetAtTime(muted?0:1, ctx.currentTime, 0.05); if(fileEl) fileEl.volume=muted?0:0.55;
     const b=document.getElementById("muteBtn"); if(b) b.textContent=muted?"🔇":"🔊"; }
@@ -1861,13 +1884,13 @@ const Music=(()=>{
   function pop(){ const now=performance.now(); if(now-lastPop<70) return; lastPop=now; sfx("pop"); }
   function spinTicks(ms){ if(!ctx) return; let t=0, gap=45;                  // ticks slow down as the wheel does
     const go2=()=>{ if(t>=ms) return; sfx("tick"); gap*=1.055; t+=gap; setTimeout(go2,gap); }; go2(); }
-  return {start, play, duck, toggle, sfx, pop, spinTicks, get muted(){ return muted; }};
+  return {start, boot, play, duck, toggle, sfx, pop, spinTicks, get muted(){ return muted; }};
 })();
 document.addEventListener("pointerdown", ()=>Music.start(), {passive:true});
 document.addEventListener("keydown", ()=>Music.start());
 
 /* ================= init ================= */
-drawWheel(); buildCards(); buildNameEntry(); Music.play("title");
+drawWheel(); buildCards(); buildNameEntry(); Music.play("title"); Music.boot();
 if(Music.muted) document.getElementById("muteBtn").textContent="🔇";
 document.getElementById("s_design").addEventListener("transitionend",()=>{});
 const _origGo=go;

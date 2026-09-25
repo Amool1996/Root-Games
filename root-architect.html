@@ -277,7 +277,7 @@
   <div id="introBar"><i id="introFill"></i></div>
   <div class="introBtns">
     <button class="bigbtn" id="introVoiceBtn" style="background:linear-gradient(#8a97a8,#5b6a7c);box-shadow:0 6px 0 #3c4b59" onclick="toggleVoice()">🔊 Voice</button>
-    <button class="bigbtn" style="background:linear-gradient(#f5b942,#d19016);box-shadow:0 6px 0 #9c6c10" onclick="introEnd()">Skip to the game ⏭</button>
+    <button class="bigbtn" style="background:linear-gradient(#f5b942,#d19016);box-shadow:0 6px 0 #9c6c10" id="introSkipBtn" onclick="introEnd()">Skip to the game ⏭</button>
   </div>
 </div>
 
@@ -345,7 +345,7 @@
 </div>
 
 <div class="screen" id="s_board">
-  <h2>🏆 Today's Champion Roots</h2>
+  <h2>🏆 Today's Champion Root Systems</h2>
   <table class="lb" id="lbTable"></table>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="bigbtn" onclick="go('title')">🏠 Back to start</button>
@@ -645,7 +645,7 @@ let lastLeft = null;   // resources the last root could not reach: {water,N,P}
 let playerName = "";   // typed before the wheel; used on every screen after
 let lastStats = null;  // per panel after a race: what was taken, how deep, how much root, grams
 function setPlayer(){
-  const v=(document.getElementById("whoInput").value||"").trim().replace(/\s+/g," ").slice(0,14);
+  const v=(document.getElementById("whoInput").value||"").replace(/[<>&"'`]/g,"").trim().replace(/\s+/g," ").slice(0,14);
   playerName = v || "Root Racer";
   Music.sfx("click"); startRound();
 }
@@ -911,6 +911,7 @@ function renderStep(){
     p.innerHTML=`<div class="stepHead">All 6 steps done, ${playerName||"friend"}! 🎉 This is your root:</div>
       <div class="pickedRow">${CARDS.map(c=>ROOT_ART[picks[c.key]]).join("")}</div>
       <div class="sub" style="font-size:min(3.4vw,20px)">Press RUN — or tap a step to change it.</div>`;
+    setTimeout(()=>{ try{ run.scrollIntoView({behavior:"smooth",block:"end"}); }catch(e){} },80);   // short screens: bring RUN into view
     return;
   }
   const c=CARDS[Math.min(stepIdx,CARDS.length-1)];
@@ -1063,7 +1064,8 @@ async function runSim(){
   document.getElementById("envBadge").textContent=E.em+" "+E.name;
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
-  const W=Math.min(window.innerWidth*0.96, 1240), H=Math.min(window.innerHeight*0.72, 820);
+  // a window that is mid-resize (or minimised) can report 0; a 0-high canvas makes drawImage throw
+  const W=Math.max(480, Math.min(window.innerWidth*0.96, 1240)), H=Math.max(320, Math.min(window.innerHeight*0.72, 820));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
   const PW=W/2, soilY=H*0.25;
@@ -1207,8 +1209,8 @@ async function runSim(){
             P.blobs.push({x:d.x,y:d.y,type:d.type,t0:t}); } }
       }
     });
-    panels.forEach(P=>drawPanel(P,t));
-    drawStats(ctx,panels,W,H);
+    try{ panels.forEach(P=>drawPanel(P,t)); drawStats(ctx,panels,W,H); }
+    catch(e){ console.warn("frame skipped:", e.message); }          // never let one bad frame end the race
     ctx.setLineDash([6,8]); ctx.strokeStyle="rgba(255,255,255,.6)"; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(PW,0); ctx.lineTo(PW,H); ctx.stroke(); ctx.setLineDash([]);
     drawLegend(ctx,W,H);
@@ -1988,6 +1990,7 @@ function introRender(){
   showScene(sc);
   const cap=document.getElementById("introCap");
   cap.style.animation="none"; void cap.offsetWidth; cap.style.animation=""; cap.textContent=capOf(sc);
+  document.getElementById("introSkipBtn").textContent = introFull ? "Skip ⏭" : "Skip to the game ⏭";
   // one bar for the whole film, not one per page
   const total=introTotal(), dur=sceneDur(sc);
   let before=0; for(let i=0;i<introIdx;i++) before+=sceneDur(PLAY[i]);
@@ -2142,6 +2145,7 @@ go=function(id){ _origGo(id); Music.play(SCENE_MUSIC[id]||"title");
   if(id==="title") renderTitleBoard();
   if(id==="who"){ const i=document.getElementById("whoInput"); i.value=""; setTimeout(()=>{ try{ i.focus(); }catch(e){} },80); }
   if(id==="sim") document.getElementById("harvestBtn").classList.remove("pulse");
+  else cancelAnimationFrame(animId);                       // leaving the race stops its loop
 };
 document.getElementById("whoInput").addEventListener("keydown", e=>{ if(e.key==="Enter") setPlayer(); });
 renderTitleBoard();

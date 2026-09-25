@@ -78,7 +78,8 @@ The booth default is the SHORT cut, which plays only eight of these pages:
     p01, p08, p09, p10, p11, p12, p13, p15
 
 Record those eight and the booth version is fully covered. The other seven
-only play when someone presses "Full Story (3 min)" on the title screen.
+only play when someone chooses the full story after saving a score, or from
+the leaderboard screen.
 
 The short cut uses SHORTER wording than the lines above. If you are recording
 just the short cut, read these instead:

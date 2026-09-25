@@ -11,6 +11,9 @@
   .screen { position:absolute; inset:0; display:none; flex-direction:column; align-items:center;
     justify-content:center; gap:18px; padding:20px; text-align:center;
     overflow-y:auto; }   /* never let a button end up below the fold with no way to reach it */
+  /* 'safe center': centre short content, but when a screen is taller than the window start it at the
+     top instead - plain 'center' pushes the top half above the scroll origin where nothing can reach it */
+  .screen { justify-content:safe center; }
   .screen.on { display:flex; }
   h1 { font-size:min(9vw,64px); color:#fff; text-shadow:3px 3px 0 #3d2b15, -1px -1px 0 #3d2b15; }
   h2 { font-size:min(6vw,40px); color:#fff; text-shadow:2px 2px 0 #3d2b15; }
@@ -662,7 +665,7 @@ let letters = [0,0,0]; const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 function go(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("on"));
-  document.getElementById("s_"+id).classList.add("on");
+  const s=document.getElementById("s_"+id); s.classList.add("on"); s.scrollTop=0;   // every screen opens at its top
   document.getElementById("homeBtn").style.display = (id==="title") ? "none" : "block";
 }
 function startRound(){ picks={}; curEnv=null; stepIdx=0; drawWheel(0); buildCards();

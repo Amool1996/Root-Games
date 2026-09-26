@@ -23,6 +23,14 @@
     box-shadow:0 6px 0 #35691f; text-shadow:1px 1px 2px #2c5519; }
   .bigbtn:active { transform:translateY(4px); box-shadow:0 2px 0 #35691f; }
   .bigbtn:disabled { filter:grayscale(.8); opacity:.6; }
+  /* "play on your phone" card with the QR code: shown on the booth screen, hidden on phones */
+  .qrCard { display:flex; align-items:center; gap:10px; background:#fff; color:#222; border-radius:16px; padding:8px 12px 8px 8px;
+    box-shadow:0 6px 20px rgba(0,0,0,.4); text-align:left; font-size:min(2.4vw,16px); line-height:1.25; }
+  .qrCard img { width:min(16vw,120px); height:auto; display:block; border-radius:6px; }
+  .qrCard b { display:block; font-size:min(3vw,20px); color:#1e6f1e; }
+  .qrCard small { display:block; color:#666; margin-top:3px; }
+  #titleQR { position:absolute; left:1.5%; bottom:13%; z-index:3; }
+  @media (max-width:760px) { .qrCard { display:none; } }
   /* title screen */
   #s_title { padding:0; overflow:hidden; background:#080f28; }
   #heroImg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;
@@ -214,6 +222,13 @@
     border-radius:12px; background:rgba(0,0,0,.45); color:#fff; cursor:pointer; }
   #homeBtn { position:absolute; top:12px; left:12px; z-index:50; font-size:22px; padding:8px 16px;
     border-radius:12px; border:none; background:rgba(0,0,0,.45); color:#fff; cursor:pointer; display:none;}
+  /* phones: titles start below the Menu / speaker buttons, smaller badges on the race
+     (kept last on purpose: these must win over the rules above) */
+  @media (max-width:760px) {
+    .screen, #s_intro, #s_wheel, #s_design { padding-top:72px; }
+    #s_title { padding-top:0; }
+    #dayBadge, #envBadge { font-size:14px; padding:4px 9px; }
+  }
 </style>
 </head>
 <body>
@@ -261,6 +276,7 @@
   </div>
   <div id="titleOverlay">
     <div id="titleBoard"></div>
+    <div id="titleQR"><div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone!</b>Scan me with your camera —<br>the same game, anywhere.<small>Design your root on the way home.</small></div></div></div>
     <div style="text-align:center">
       <h1 class="bigTitle">ROOT RACE</h1>
       <p class="tagline">Design a corn root system, test it in a <b>real supercomputer simulation</b>,<br>and build the champion root for your field!</p>
@@ -287,6 +303,7 @@
 <div class="screen" id="s_after">
   <h2>Saved! 🎉</h2>
   <div class="sub" id="afterLine"></div>
+  <div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone!</b>Scan me with your camera —<br>the same game, anywhere.<small>Design your root on the way home.</small></div></div>
   <div class="sub">Want to know how real scientists design roots?<br>Watch Rooty's <b>full story</b> — 3 minutes.</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="bigbtn" onclick="showIntro(true)">📺 Yes, show me!</button>
@@ -350,6 +367,7 @@
 <div class="screen" id="s_board">
   <h2>🏆 Today's Champion Root Systems</h2>
   <table class="lb" id="lbTable"></table>
+  <div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone!</b>Scan me with your camera —<br>the same game, anywhere.<small>Design your root on the way home.</small></div></div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="bigbtn" onclick="go('title')">🏠 Back to start</button>
     <button class="bigbtn" style="background:linear-gradient(#5b9fd4,#31699a);box-shadow:0 6px 0 #23507a" onclick="showIntro(true)">📺 Learn more: the full story (3 min)</button>
@@ -1035,28 +1053,47 @@ function makeSoil(PW,H,soilY,sc,visD,seed){
 /* the scoreboard in the sky between the two plants: for water, N and P, what each root has taken
    up so far rises ABOVE the ground line, what is still in the soil hangs BELOW it and shrinks */
 function drawStats(ctx,panels,W,H){
-  const pw=Math.min(300,W*0.26), ph=Math.min(150,H*0.19), x0=W/2-pw/2, y0=8;
+  // the panel fills the sky down to the ground line (the plant names sit just under that line)
+  const narrow=W<600;                                        // a phone: one column, badges above
+  const y0=narrow?44:8, ph=Math.min(250,H*0.3-y0-4), pw=narrow?W*0.94:Math.min(680,W*0.46), x0=W/2-pw/2;
+  const f=(n,b)=>`${b?"bold ":""}${Math.round(ph*n)}px 'Segoe UI',Arial,sans-serif`;
   ctx.save();
-  ctx.fillStyle="rgba(0,0,0,.52)"; roundRect(ctx,x0,y0,pw,ph,14); ctx.fill();
-  ctx.fillStyle="#fff"; ctx.textAlign="center"; ctx.textBaseline="middle";
-  ctx.font=`bold ${Math.round(ph*0.09)}px 'Segoe UI',sans-serif`; ctx.fillText("taken up ↑  ·  still in the soil ↓", x0+pw/2, y0+ph*0.09);
-  const base=y0+ph*0.6, up=ph*0.36, down=ph*0.22, types=["water","N","P"], colW=pw/3;
-  ctx.strokeStyle="rgba(255,255,255,.65)"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(x0+10,base); ctx.lineTo(x0+pw-10,base); ctx.stroke();
+  // a deep-blue glass panel with a bright rim and a soft shadow, so it reads against the sky
+  ctx.shadowColor="rgba(0,0,0,.5)"; ctx.shadowBlur=18; ctx.shadowOffsetY=6;
+  const bg=ctx.createLinearGradient(0,y0,0,y0+ph); bg.addColorStop(0,"rgba(22,44,96,.94)"); bg.addColorStop(1,"rgba(8,20,52,.94)");
+  ctx.fillStyle=bg; roundRect(ctx,x0,y0,pw,ph,18); ctx.fill();
+  ctx.shadowColor="transparent"; ctx.shadowBlur=0; ctx.shadowOffsetY=0;
+  ctx.strokeStyle="rgba(255,255,255,.45)"; ctx.lineWidth=2.5; roundRect(ctx,x0+1.5,y0+1.5,pw-3,ph-3,17); ctx.stroke();
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillStyle="#fff"; ctx.font=f(0.115,true); ctx.fillText("WHO IS DRINKING MORE?", x0+pw/2, y0+ph*0.095);
+  // legend: a gold-rimmed bar is the child, a white-rimmed bar is the champion
+  const me=(playerName||"YOU").toUpperCase().slice(0,12), ly=y0+ph*0.23, ch=ph*0.08;
+  ctx.font=f(0.095,true);
+  const w1=ctx.measureText(me).width, w2=ctx.measureText("CHAMPION").width, gap=ph*0.06;
+  let lx=x0+pw/2-(ch*1.6+8+w1+gap*2+ch*1.6+8+w2)/2;
+  const chip=(x,rim)=>{ ctx.fillStyle="#7fc6ff"; roundRect(ctx,x,ly-ch/2,ch*1.6,ch,3); ctx.fill(); ctx.strokeStyle=rim; ctx.lineWidth=2.5; ctx.stroke(); };
+  ctx.textAlign="left";
+  chip(lx,"#ffd23f"); lx+=ch*1.6+8; ctx.fillStyle="#ffd23f"; ctx.fillText(me,lx,ly); lx+=w1+gap*2;
+  chip(lx,"#ffffff"); lx+=ch*1.6+8; ctx.fillStyle="#fff"; ctx.fillText("CHAMPION",lx,ly);
+  // bars: taken so far rises above the ground line, what is still in the soil hangs below it
+  const base=y0+ph*0.72, up=ph*0.33, down=ph*0.08, types=["water","N","P"], colW=pw/3;
+  ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x0+12,base); ctx.lineTo(x0+pw-12,base); ctx.stroke();
+  ctx.textAlign="center";
   types.forEach((ty,ti)=>{
-    const gx=x0+colW*ti+colW/2, bw=Math.max(8,colW*0.2);
+    const gx=x0+colW*ti+colW/2, bw=Math.max(12,colW*0.26);
     panels.forEach((P,pi)=>{
       let tot=0, eat=0; for(const d of P.dots){ if(d.type!==ty) continue; tot++; if(d.gone) eat++; }
-      const fr=eat/Math.max(1,tot), bx=gx+(pi?3:-bw-3);
-      ctx.globalAlpha=pi?0.7:1;
-      ctx.fillStyle=RES[ty].c;             roundRect(ctx,bx,base-up*fr-1,bw,up*fr+1,3); ctx.fill();        // taken: rises
-      ctx.fillStyle="rgba(150,118,84,.9)"; roundRect(ctx,bx,base+2,bw,Math.max(1,down*(1-fr)),3); ctx.fill(); // left: hangs
-      ctx.globalAlpha=1;
+      const fr=eat/Math.max(1,tot), bx=gx+(pi?4:-bw-4), top=base-up*fr;
+      const g=ctx.createLinearGradient(0,top,0,base); g.addColorStop(0,"#ffffff"); g.addColorStop(0.35,RES[ty].c); g.addColorStop(1,RES[ty].c);
+      ctx.shadowColor=RES[ty].c; ctx.shadowBlur=pi?0:12;
+      ctx.fillStyle=g; roundRect(ctx,bx,top-1,bw,up*fr+1,4); ctx.fill();                       // taken: rises
+      ctx.shadowBlur=0; ctx.strokeStyle=pi?"#ffffff":"#ffd23f"; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.fillStyle="rgba(160,120,80,.95)"; roundRect(ctx,bx,base+3,bw,Math.max(2,down*(1-fr)),3); ctx.fill(); // left: hangs
+      ctx.fillStyle="#fff"; ctx.font=f(0.085,true); ctx.fillText(Math.round(fr*100)+"%", bx+bw/2, top-ph*0.06);  // the number
     });
-    ctx.font=`${Math.round(ph*0.1)}px 'Segoe UI',sans-serif`; ctx.fillStyle="#fff";
-    ctx.fillText(RES[ty].label.split(" ")[0], gx, y0+ph-ph*0.09);
+    ctx.fillStyle="#fff"; ctx.font=f(0.105,true);
+    ctx.fillText(RES[ty].label, gx, y0+ph*0.905);
   });
-  ctx.font=`${Math.round(ph*0.075)}px 'Segoe UI',sans-serif`; ctx.fillStyle="rgba(255,255,255,.85)"; ctx.textAlign="center";
-  ctx.fillText(`left bar: ${playerName||"you"}   ·   right bar: champion`, x0+pw/2, y0+ph*0.2);
   ctx.restore();
 }
 async function runSim(){
@@ -1068,10 +1105,10 @@ async function runSim(){
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
   // a window that is mid-resize (or minimised) can report 0; a 0-high canvas makes drawImage throw
-  const W=Math.max(480, Math.min(window.innerWidth*0.96, 1240)), H=Math.max(320, Math.min(window.innerHeight*0.72, 820));
+  const W=Math.max(280, Math.min(window.innerWidth-40, 1240)), H=Math.max(320, Math.min(window.innerHeight*0.72, 820));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
-  const PW=W/2, soilY=H*0.25;
+  const PW=W/2, soilY=H*0.3;   // a taller sky, so the scoreboard is big enough to read from the queue
 
   /* two roots grow together on identical soil: the kid's design, and the best design for this
      field, so the difference they see is the root and nothing else */
@@ -1452,12 +1489,10 @@ function lessonText(combo,env,score){
               : `<b style="color:#777">made little difference here</b>`;
     return `<div class="lrow">${M[e.p].name}: ${tag}<small>${REASON[e.p][env]}</small></div>`;
   });
-  const bc=bestComboOf(env);
   const head = score===100 ? `🏆 <b>PERFECT, ${name}!</b> You found the champion root for this field. Here is why each choice worked:` :
     score>=90 ? `⭐ So close, ${name}! Here is what each choice did:` : `Here is what each of your six choices did, ${name}:`;
-  const champNames = bc.match(/../g).map(c=>M[c].name.split(" ").slice(0,2).join(" ")).join(", ");
-  const tail = score===100 ? "" : `<div class="lrow" style="background:rgba(94,176,60,.15)"><b>The champion root here:</b> ${champNames}</div>`;
-  return head+rows.join("")+tail;
+  // the champion's six cards are deliberately NOT listed: the next child should discover them, not copy them
+  return head+rows.join("");
 }
 
 /* ================= name + leaderboard ================= */

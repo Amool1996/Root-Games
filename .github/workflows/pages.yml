@@ -1,0 +1,35 @@
+# Publishes this folder as a website at https://amool1996.github.io/Root-Games/
+# so the QR code in Root Race opens the same game on a phone. Runs on every push to main.
+name: Publish to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Collect only what the games need (not the 180 MB of cluster outputs)
+        run: |
+          mkdir site
+          cp index.html root-architect.html amazing-roots-games.html site/
+          cp -r ra-data site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

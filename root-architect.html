@@ -116,11 +116,11 @@
   #rootHub { position:absolute; left:50%; top:50%; width:47%; height:47%;
     transform:translate(-50%,-50%); border-radius:50%; border:6px solid #fff;
     box-shadow:0 4px 16px rgba(0,0,0,.55); z-index:3; background:#0a1428; }
-  #spinArrow { position:absolute; left:50%; top:50%; width:40px; height:38%;
+  #spinArrow { position:absolute; left:50%; top:50%; width:40px; height:18%;
     transform-origin:50% 100%; transform:translate(-50%,-100%) rotate(0deg);
     transition:transform 4s cubic-bezier(.15,.75,.25,1); z-index:5; pointer-events:none;
     filter:drop-shadow(0 3px 6px rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(255,226,77,.55)); }
-  .wSlot { position:absolute; width:31%; height:31%; border-radius:50%; z-index:4;
+  .wSlot { position:absolute; width:34%; height:34%; border-radius:50%; z-index:4;
     transform:translate(-50%,-50%); transition:transform .3s, box-shadow .3s;
     box-shadow:0 0 0 6px var(--ring,#888), 0 4px 12px rgba(0,0,0,.4); }
   .wSlot.won { transform:translate(-50%,-50%) scale(1.22); z-index:7;
@@ -131,7 +131,7 @@
     border-radius:999px; padding:3px 10px; font-weight:800; font-size:min(1.6vw,15px);
     box-shadow:0 3px 8px rgba(0,0,0,.45); letter-spacing:.2px; }
   .wSlot.won .wName { background:#c98a00; border-color:#ffe14d; color:#fffbe8; }
-  .wSlot.pTop .wName { bottom:auto; top:-13%; }        /* clear of the resting pointer */
+  .wSlot.pBot .wName { bottom:auto; top:-13%; }        /* clear of the SPIN button below */
   /* a whole living field behind the wheel, drawn like the story scenes */
   #wheelBg { position:absolute; inset:0; z-index:0; pointer-events:none; }
   #wheelBg svg { width:100%; height:100%; display:block; }
@@ -457,8 +457,10 @@ function weatherArt(env){
 
   let sky = `<rect width="100" height="${SOIL_TOP}" fill="url(#sky_${env})"/>`;
   if(env === "Drought"){
-    sky += `<circle cx="50" cy="13" r="12" fill="#fff3c4" opacity=".95"/>`
-         + `<circle cx="50" cy="13" r="17" fill="#ffd45e" opacity=".33"/>`;
+    sky += `<circle cx="50" cy="13" r="17" fill="#ffd45e" opacity=".33"/>`
+         + `<circle cx="50" cy="13" r="12" fill="#fff3c4" stroke="#e8a52e" stroke-width="1.6"/>`
+         + `<circle cx="45.5" cy="11" r="1.7" fill="#8a5a12"/><circle cx="54.5" cy="11" r="1.7" fill="#8a5a12"/>`
+         + `<path d="M45 16.5 q5 4.5 10 0" fill="none" stroke="#8a5a12" stroke-width="1.6" stroke-linecap="round"/>`;
     for(let i=0;i<7;i++){ const a=i*51.4; const x=50+Math.cos(a*Math.PI/180)*21, y=13+Math.sin(a*Math.PI/180)*21;
       sky += `<line x1="50" y1="13" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ffcf52" stroke-width="2" stroke-linecap="round" opacity=".75"/>`; }
   } else if(env === "LowN"){
@@ -466,7 +468,9 @@ function weatherArt(env){
     for(let i=0;i<11;i++){ const x=14+i*7.2, y=20+(i%3)*4;      // rain: this is what washes N down
       sky += `<line x1="${x}" y1="${y}" x2="${x-2}" y2="${y+7}" stroke="#9fc3de" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>`; }
   } else {
-    sky += `<circle cx="22" cy="12" r="8.5" fill="#ffd951"/>`;
+    sky += `<circle cx="22" cy="12" r="9" fill="#ffd951" stroke="#e8a52e" stroke-width="1.5"/>`
+         + `<circle cx="19" cy="10.5" r="1.4" fill="#8a5a12"/><circle cx="25" cy="10.5" r="1.4" fill="#8a5a12"/>`
+         + `<path d="M18.5 15 q3.5 3.5 7 0" fill="none" stroke="#8a5a12" stroke-width="1.4" stroke-linecap="round"/>`;
     sky += `<ellipse cx="64" cy="13" rx="17" ry="7" fill="#ffffff" opacity=".9"/><ellipse cx="76" cy="15" rx="11" ry="5" fill="#ffffff" opacity=".8"/>`;
     if(env === "Perfect") sky += `<path d="M14 36 A36 36 0 0 1 86 36" fill="none" stroke="#ff9d9d" stroke-width="2.4" opacity=".55"/>`
                                + `<path d="M19 36 A31 31 0 0 1 81 36" fill="none" stroke="#ffd36e" stroke-width="2.4" opacity=".55"/>`
@@ -487,9 +491,10 @@ function weatherArt(env){
 
   /* grass: how well the field is doing tells you as much as the soil does */
   const GRASS = { Perfect:"#4aa83f", Drought:"#b79a55", LowN:"#a8b45c", LowP:"#5f9a4e" }[env];
-  soil += `<rect y="${SOIL_TOP-2}" width="100" height="4" fill="${GRASS}"/>`;
+  soil += `<rect y="${SOIL_TOP-2.5}" width="100" height="5" fill="${GRASS}"/>`
+        + `<line x1="0" y1="${SOIL_TOP+2.5}" x2="100" y2="${SOIL_TOP+2.5}" stroke="rgba(0,0,0,.25)" stroke-width="1.6"/>`;
   for(let x=3;x<100;x+=6){ const h = env==="Drought" ? 3+r()*3 : 6+r()*4;
-    soil += `<line x1="${x}" y1="${SOIL_TOP-1}" x2="${(x+(r()<.5?-2:2)).toFixed(1)}" y2="${(SOIL_TOP-1-h).toFixed(1)}" stroke="${GRASS}" stroke-width="1.6" stroke-linecap="round"/>`; }
+    soil += `<line x1="${x}" y1="${SOIL_TOP-1}" x2="${(x+(r()<.5?-2:2)).toFixed(1)}" y2="${(SOIL_TOP-1-h).toFixed(1)}" stroke="${GRASS}" stroke-width="2.4" stroke-linecap="round"/>`; }
 
   if(env === "Drought"){                                  // cracked, baked topsoil
     for(let i=0;i<5;i++){ const x = 12+i*19 + r()*6;
@@ -923,8 +928,9 @@ function buildSpinner(){
   ENV_ORDER.forEach(e=>{
     const slot=document.createElement("div"); slot.className="wSlot"; slot.id="wc_"+e;
     slot.style.left=WHEEL_POS[e][0]; slot.style.top=WHEEL_POS[e][1];
-    /* the pointer rests pointing straight up, so the top wedge wears its name above */
-    if(parseFloat(WHEEL_POS[e][1]) < 30) slot.classList.add("pTop");
+    /* labels stay inside the wheel: under their circle, except the bottom wedge,
+       which wears its name above so the SPIN button below cannot cover it */
+    if(parseFloat(WHEEL_POS[e][1]) > 70) slot.classList.add("pBot");
     slot.style.setProperty("--ring", "#fff");
     /* A prize wheel only creates anticipation if you can see the prizes. Unlabelled
        wedges mean the child spins blind and has nothing to hope for. The short name

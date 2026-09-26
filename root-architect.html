@@ -164,6 +164,17 @@
                          90%{stroke-dashoffset:0} 100%{stroke-dashoffset:520} }
   .bgRoot { stroke-dasharray:520; animation:growCycle 11s ease-in-out infinite; }
   .wCartoon svg { width:100%; height:100%; display:block; }
+  /* design screen: the cards on the left, your root taking shape on the right */
+  #designRow { display:flex; gap:min(3vw,28px); align-items:flex-start; justify-content:center;
+    flex-wrap:wrap; max-width:1180px; margin:0 auto; }
+  #designRow #stepPanel { flex:1 1 440px; max-width:640px; }
+  #rootPreviewWrap { flex:0 0 auto; width:min(30vw,310px); text-align:center; }
+  #rootPreview { border-radius:16px; overflow:hidden; box-shadow:0 8px 22px rgba(0,0,0,.45);
+    border:4px solid rgba(255,255,255,.85); background:#301f11; }
+  #rootPreview .avSvg { width:100%; height:auto; display:block; }
+  #rootPreviewCap { margin-top:7px; font-weight:800; color:#ffe9a8; text-shadow:1px 1px 2px #333;
+    font-size:min(2.4vw,16px); }
+  @media (max-width:820px){ #rootPreviewWrap { width:min(52vw,230px); } }
   /* design cards */
   #s_design { justify-content:flex-start; overflow-y:auto; padding-top:14px; gap:12px; }
   /* the six choices climb like a staircase; the current step glows, done steps turn green */
@@ -358,7 +369,10 @@
   <h2 id="designTitle">Build your root!</h2>
   <div class="sub" id="hintLine"></div>
   <div id="stairs"></div>
-  <div id="stepPanel"></div>
+  <div id="designRow">
+    <div id="stepPanel"></div>
+    <div id="rootPreviewWrap"><div id="rootPreview"></div><div id="rootPreviewCap">your root so far</div></div>
+  </div>
   <button class="bigbtn" id="runBtn" disabled onclick="runSim()">🖥️ RUN THE SUPERCOMPUTER!</button>
 </div>
 
@@ -948,7 +962,97 @@ function spin(){
 
 /* ================= design ================= */
 let stepIdx=0;
-function buildCards(){ renderStairs(); renderStep(); }
+/* ---------- your root, while you are still building it ----------
+   Six cards used to be six abstract choices: you picked, nothing visibly
+   happened, and the first time you saw the thing you had designed was after
+   the supercomputer ran. A child building a character expects to SEE the
+   character. So this draws the root from whatever has been chosen so far and
+   redraws on every pick — traits that are still undecided are drawn faint and
+   grey, so the root visibly fills in as the six steps are answered.
+
+   It is deliberately the same visual language as the race: pale root on dark
+   soil, a grass line, root hairs where the Fuzzy card is chosen. Nothing here
+   feeds the simulation — it is a mirror of the choices, not a prediction. */
+function rootAvatar(p){
+  p = p || {};
+  const set = k => !!p[k];
+  const W = 240, H = 250, GY = 52, cx = W/2;   // grass line at GY
+
+  /* every trait falls back to a middle value while it is still unchosen */
+  const deep    = p.depth === "De", shallow = p.depth === "Sh";
+  const steady  = p.speed === "St";
+  const fuzzy   = p.hairs === "Fz";
+  const thick   = p.thick === "Th", skinny = p.thick === "Sk";
+  const sparse  = p.bush  === "Sp";
+  const airy    = p.air   === "Ai";
+
+  const reach   = (deep ? 176 : shallow ? 96 : 134) * (steady ? 0.74 : 1);
+  const spread  = deep ? 26 : shallow ? 62 : 42;          // degrees from vertical
+  const wMain   = thick ? 5.4 : skinny ? 2.2 : 3.6;
+  const wLat    = wMain * 0.5;
+  const nLat    = sparse ? 2 : p.bush === "Bu" ? 6 : 4;   // laterals per axis
+  const alpha   = airy ? 0.58 : p.air === "So" ? 1 : 0.85;
+
+  const N_AXIS = 5;
+  const rnd = (()=>{ let t = 20260926;                     // stable between redraws
+    return () => { t = (t*1103515245 + 12345) & 0x7fffffff; return t / 0x7fffffff; }; })();
+
+  const ink   = k => set(k) ? "#f6ecd6" : "#8d8577";       // undecided traits go grey
+  const inkOp = k => set(k) ? alpha : 0.34;
+
+  let g = "";
+  for(let i = 0; i < N_AXIS; i++){
+    const t   = N_AXIS === 1 ? 0 : (i/(N_AXIS-1))*2 - 1;   // -1 .. 1
+    const ang = t * spread * Math.PI/180;
+    const len = reach * (1 - Math.abs(t)*0.22);
+    const ex  = cx + Math.sin(ang)*len, ey = GY + Math.cos(ang)*len;
+    const mx  = cx + Math.sin(ang)*len*0.45 + t*14, my = GY + Math.cos(ang)*len*0.5;
+    g += `<path d="M${cx} ${GY} Q${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}"
+            fill="none" stroke="${ink("depth")}" stroke-width="${wMain}" stroke-linecap="round"
+            opacity="${inkOp("depth")}"/>`;
+
+    /* laterals branch off each axis */
+    for(let j = 1; j <= nLat; j++){
+      const f  = j/(nLat+1);
+      const bx = cx + (mx-cx)*2*f*(1-f)*1.6 + Math.sin(ang)*len*f;
+      const by = GY + Math.cos(ang)*len*f;
+      const dir = (j % 2 ? 1 : -1);
+      const ll  = (shallow ? 34 : 24) * (1 - f*0.4);
+      g += `<path d="M${bx.toFixed(1)} ${by.toFixed(1)} q${(dir*ll*0.6).toFixed(1)} ${(ll*0.35).toFixed(1)} ${(dir*ll).toFixed(1)} ${(ll*0.9).toFixed(1)}"
+              fill="none" stroke="${ink("bush")}" stroke-width="${wLat}" stroke-linecap="round"
+              opacity="${inkOp("bush")}"/>`;
+    }
+
+    /* root hairs: only when the Fuzzy card has been chosen */
+    if(fuzzy){
+      for(let k = 1; k <= 14; k++){
+        const f = k/15, hx = cx + Math.sin(ang)*len*f, hy = GY + Math.cos(ang)*len*f;
+        const d = (k % 2 ? 1 : -1) * (4 + rnd()*3);
+        g += `<line x1="${hx.toFixed(1)}" y1="${hy.toFixed(1)}" x2="${(hx+d).toFixed(1)}" y2="${(hy+2).toFixed(1)}"
+                stroke="#f6ecd6" stroke-width="1" stroke-linecap="round" opacity="${alpha*0.85}"/>`;
+      }
+    }
+  }
+
+  /* the little shoot above ground, so it reads as a plant and not a diagram */
+  const shoot = `<path d="M${cx} ${GY} L${cx} ${GY-26}" stroke="#4aa83f" stroke-width="4" stroke-linecap="round"/>`
+    + `<path d="M${cx} ${GY-18} q-16 -6 -22 -18" fill="none" stroke="#5cba4a" stroke-width="5" stroke-linecap="round"/>`
+    + `<path d="M${cx} ${GY-23} q16 -5 22 -17" fill="none" stroke="#5cba4a" stroke-width="5" stroke-linecap="round"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="avSvg">
+    <defs><linearGradient id="avSoil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b4a2c"/><stop offset="1" stop-color="#301f11"/></linearGradient>
+      <linearGradient id="avSky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fd0f5"/><stop offset="1" stop-color="#d7eefb"/></linearGradient></defs>
+    <rect width="${W}" height="${GY}" fill="url(#avSky)"/>
+    <rect y="${GY}" width="${W}" height="${H-GY}" fill="url(#avSoil)"/>
+    <rect y="${GY-3}" width="${W}" height="5" fill="#4aa83f"/>
+    ${shoot}${g}
+  </svg>`;
+}
+
+function buildCards(){ renderStairs(); renderStep(); drawAvatar(); }
+function drawAvatar(){ const h=document.getElementById('rootPreview'); if(h) h.innerHTML=rootAvatar(picks); }
 function renderStairs(){
   const s=document.getElementById("stairs"); s.innerHTML="";
   CARDS.forEach((c,i)=>{
@@ -978,7 +1082,7 @@ function renderStep(){
   [c.a,c.b].forEach(o=>{
     const b=document.createElement("button"); b.className="card"+(picks[c.key]===o.code?" sel":""); b.id="card_"+o.code;
     b.innerHTML=`<span class="av">${ROOT_ART[o.code]||""}</span><b>${o.label}</b><br><small>${CARDINFO[o.code]}</small>`;
-    b.onclick=()=>{ Music.sfx("click"); picks[c.key]=o.code;
+    b.onclick=()=>{ Music.sfx("click"); picks[c.key]=o.code; setTimeout(drawAvatar,0);
       document.querySelectorAll("#stepOpts .card").forEach(x=>x.classList.toggle("sel",x.id==="card_"+o.code));
       setTimeout(()=>{ const next=CARDS.findIndex(cc=>!picks[cc.key]);       // climb to the next empty step
         stepIdx = next>=0 ? next : CARDS.length; renderStairs(); renderStep(); }, 380);

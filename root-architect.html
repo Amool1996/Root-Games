@@ -144,8 +144,22 @@
   #s_wheel h2, #s_wheel .sub, #s_wheel .bigbtn { position:relative; z-index:2; }
   /* tighter stacking so the bigger wheel still leaves the next button on screen */
   #s_wheel { gap:9px; padding:10px; }
+  /* four fields, one per quarter of the screen */
+  .wq { position:absolute; width:50%; height:50%; overflow:hidden;
+        box-shadow:inset 0 0 0 2px rgba(255,255,255,.18);
+        transition:filter .5s, opacity .5s; }
+  .wq svg { width:100%; height:100%; display:block; }
+  .wq.dim  { filter:saturate(.45) brightness(.5); }      /* the three you did not get */
+  .wq.lit  { filter:saturate(1.15) brightness(1.06); }   /* the one you did */
+  /* a root grows down through every field, on a loop */
+  .qRoot path { stroke-dasharray:130; animation:growCycle2 9s ease-in-out infinite; }
+  .qRoot path:nth-child(2){ animation-delay:.9s } .qRoot path:nth-child(3){ animation-delay:1.5s }
+  .qRoot path:nth-child(4){ animation-delay:2.1s } .qRoot path:nth-child(5){ animation-delay:2.7s }
+  @keyframes growCycle2 { 0%{stroke-dashoffset:130} 45%{stroke-dashoffset:0}
+                          88%{stroke-dashoffset:0} 100%{stroke-dashoffset:130} }
+  /* keep the wheel readable on top without making the fields murky */
   #wheelBg::after { content:""; position:absolute; inset:0; background:
-    linear-gradient(180deg, rgba(0,0,0,.38) 0%, rgba(0,0,0,0) 26%, rgba(0,0,0,0) 78%, rgba(0,0,0,.35) 100%); }
+    radial-gradient(ellipse at 50% 46%, rgba(0,0,0,.66) 0%, rgba(0,0,0,.44) 30%, rgba(0,0,0,.22) 55%, rgba(0,0,0,.30) 100%); }
   @keyframes growCycle { 0%{stroke-dashoffset:520} 50%{stroke-dashoffset:0}
                          90%{stroke-dashoffset:0} 100%{stroke-dashoffset:520} }
   .bgRoot { stroke-dasharray:520; animation:growCycle 11s ease-in-out infinite; }
@@ -428,8 +442,8 @@ function artRand(seed){ let t = seed + 0x6D2B79F5;
                  return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 
 /* scatter one resource through the depth band resourcePlan gave us, inside the circle */
-function artDots(plan, colour, seed){
-  const r = artRand(seed), n = Math.round(plan.n * 0.24);   // a wedge is small; keep it legible
+function artDots(plan, colour, seed, big){
+  const r = artRand(seed), n = Math.round(plan.n * (big ? 1.0 : 0.24));
   let out = "";
   for(let i = 0; i < n; i++){
     const cm = plan.y0 + r() * (Math.min(plan.y1, DEEPEST_CM) - plan.y0);
@@ -438,12 +452,12 @@ function artDots(plan, colour, seed){
     const x  = 8 + r() * 84;
     const dx = x - 50, dy = y - 50;
     if(dx*dx + dy*dy > 44*44) continue;                     // outside the visible circle
-    out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3.4 + r()*1.3).toFixed(1)}" fill="${colour}" stroke="rgba(0,0,0,.35)" stroke-width="0.8"/>`;
+    out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(big ? 1.0 + r()*0.5 : 3.4 + r()*1.3).toFixed(1)}" fill="${colour}" stroke="rgba(0,0,0,.35)" stroke-width="${big ? 0.25 : 0.8}"/>`;
   }
   return out;
 }
 
-function weatherArt(env){
+function weatherArt(env, big){
   const plan = resourcePlan(env);
   const r = artRand(env.length * 977 + 13);
 
@@ -493,8 +507,8 @@ function weatherArt(env){
   const GRASS = { Perfect:"#4aa83f", Drought:"#b79a55", LowN:"#a8b45c", LowP:"#5f9a4e" }[env];
   soil += `<rect y="${SOIL_TOP-2.5}" width="100" height="5" fill="${GRASS}"/>`
         + `<line x1="0" y1="${SOIL_TOP+2.5}" x2="100" y2="${SOIL_TOP+2.5}" stroke="rgba(0,0,0,.25)" stroke-width="1.6"/>`;
-  for(let x=3;x<100;x+=6){ const h = env==="Drought" ? 3+r()*3 : 6+r()*4;
-    soil += `<line x1="${x}" y1="${SOIL_TOP-1}" x2="${(x+(r()<.5?-2:2)).toFixed(1)}" y2="${(SOIL_TOP-1-h).toFixed(1)}" stroke="${GRASS}" stroke-width="2.4" stroke-linecap="round"/>`; }
+  for(let x=3;x<100;x+= (big ? 2 : 6)){ const h = env==="Drought" ? 3+r()*3 : 6+r()*4;
+    soil += `<line x1="${x}" y1="${SOIL_TOP-1}" x2="${(x+(r()<.5?-2:2)).toFixed(1)}" y2="${(SOIL_TOP-1-h).toFixed(1)}" stroke="${GRASS}" stroke-width="${big ? 0.8 : 2.4}" stroke-linecap="round"/>`; }
 
   if(env === "Drought"){                                  // cracked, baked topsoil
     for(let i=0;i<5;i++){ const x = 12+i*19 + r()*6;
@@ -507,9 +521,9 @@ function weatherArt(env){
   }
 
   /* --- the resources, straight from the simulation's own plan --- */
-  const dots = artDots(plan.water, RES.water.c, 11)
-             + artDots(plan.N,     RES.N.c,     29)
-             + artDots(plan.P,     RES.P.c,     47);
+  const dots = artDots(plan.water, RES.water.c, 11, big)
+             + artDots(plan.N,     RES.N.c,     29, big)
+             + artDots(plan.P,     RES.P.c,     47, big);
 
   return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`
     + `<defs>`
@@ -744,6 +758,7 @@ function startRound(){ picks={}; curEnv=null; stepIdx=0; drawWheel(0); buildCard
   document.getElementById("wheelNext").style.display="none";
   document.getElementById("spinBtn").style.display="inline-block";
   document.querySelectorAll(".wSlot").forEach(n=>n.classList.remove("won"));
+  document.querySelectorAll(".wq").forEach(n=>n.classList.remove("lit","dim"));
   const arrow=document.getElementById("spinArrow"), hub=document.getElementById("rootHub");
   arrow.style.transition="none"; arrow.style.transform="translate(-50%,-100%) rotate(0deg)";
   hub.style.transition="none"; hub.style.transform="translate(-50%,-50%) rotate(0deg)";
@@ -823,71 +838,31 @@ function epicRoots(x,gy,n,seed){
 }
 
 function wheelBackdrop(){
-  const W=1600,H=900,gy=470,cx=800,cy=440;
-  const r=rng(101);
-  let s=`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
-    <linearGradient id="wbSky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#070b1f"/><stop offset=".42" stop-color="#2a1e58"/>
-      <stop offset=".78" stop-color="#8a3f5a"/><stop offset="1" stop-color="#ff9a3c"/></linearGradient>
-    <radialGradient id="wbSun" cx=".5" cy=".5" r=".5">
-      <stop offset="0" stop-color="#fff3c4"/><stop offset=".3" stop-color="#ffcf6a" stop-opacity=".85"/>
-      <stop offset=".65" stop-color="#ff8f3a" stop-opacity=".35"/><stop offset="1" stop-color="#ff8f3a" stop-opacity="0"/></radialGradient>
-    <linearGradient id="wbSoil" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#6b4526"/><stop offset=".25" stop-color="#48301a"/>
-      <stop offset=".6" stop-color="#2a1a0d"/><stop offset="1" stop-color="#120a04"/></linearGradient>
-    <linearGradient id="wbStem" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#132c0e"/><stop offset=".5" stop-color="#2d6a22"/><stop offset="1" stop-color="#0f230b"/></linearGradient>
-    <linearGradient id="wbLeaf" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3f8f2f"/><stop offset=".6" stop-color="#1f5a19"/><stop offset="1" stop-color="#0d2a0a"/></linearGradient>
-    <linearGradient id="wbRootD" gradientUnits="userSpaceOnUse" x1="0" y1="${gy}" x2="0" y2="${gy+480}">
-      <stop offset="0" stop-color="#ffe2a8"/><stop offset=".45" stop-color="#e2b876"/><stop offset="1" stop-color="#8d5f33"/></linearGradient>
-    <radialGradient id="wbVig" cx=".5" cy=".5" r=".72">
-      <stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".78"/></radialGradient>
-    <filter id="wbGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="7"/></filter>
-    <filter id="wbBlurS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
-  </defs>`;
-  // ---- sky, stars, the glow the wheel sits in, and slow god rays ----
-  s+=`<rect width="${W}" height="${H}" fill="url(#wbSky)"/>`;
-  for(let i=0;i<70;i++){ const sx=r()*W, sy=r()*gy*0.7, rr=0.7+r()*1.6;
-    s+=`<circle cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" r="${rr.toFixed(1)}" fill="#fff"><animate attributeName="opacity" values="${(0.2+r()*0.5).toFixed(2)};1;${(0.2+r()*0.5).toFixed(2)}" dur="${(2+r()*4).toFixed(1)}s" begin="${(r()*4).toFixed(1)}s" repeatCount="indefinite"/></circle>`; }
-  s+=`<g opacity=".16"><animateTransform attributeName="transform" type="rotate" from="0 ${cx} ${cy}" to="360 ${cx} ${cy}" dur="150s" repeatCount="indefinite"/>`;
-  for(let i=0;i<14;i++){ const a=i*(Math.PI*2/14), a2=a+0.09;
-    s+=`<path d="M${cx} ${cy} L${(cx+Math.cos(a)*1400).toFixed(0)} ${(cy+Math.sin(a)*1400).toFixed(0)} L${(cx+Math.cos(a2)*1400).toFixed(0)} ${(cy+Math.sin(a2)*1400).toFixed(0)} Z" fill="#ffd98a"/>`; }
-  s+=`</g>`;
-  s+=`<circle cx="${cx}" cy="${cy}" r="520" fill="url(#wbSun)"/>`;
-  // ---- ground: a dark grass line, then the cut-open soil ----
-  s+=`<rect y="${gy}" width="${W}" height="${H-gy}" fill="url(#wbSoil)"/>`;
-  for(let i=1;i<6;i++) s+=`<rect y="${gy+i*78}" width="${W}" height="1.5" fill="#000" opacity=".22"/>`;
-  s+=`<g opacity=".18" fill="#000">`;
-  for(let i=0;i<260;i++) s+=`<circle cx="${(r()*W).toFixed(0)}" cy="${(gy+6+r()*(H-gy-6)).toFixed(0)}" r="${(1+r()*3.2).toFixed(1)}"/>`;
-  s+=`</g><g opacity=".5">`;
-  for(let i=0;i<22;i++){ const sx=r()*W, sy=gy+40+r()*(H-gy-80), w=8+r()*16;
-    s+=`<ellipse cx="${sx.toFixed(0)}" cy="${sy.toFixed(0)}" rx="${w.toFixed(0)}" ry="${(w*0.62).toFixed(0)}" fill="#4a3320"/><ellipse cx="${sx.toFixed(0)}" cy="${(sy-2).toFixed(0)}" rx="${(w*0.6).toFixed(0)}" ry="${(w*0.3).toFixed(0)}" fill="#6b4c32" opacity=".7"/>`; }
-  s+=`</g>`;
-  let grass=`<g fill="#0c1f08">`;
-  for(let i=0;i<W;i+=9){ const hh=10+r()*22; grass+=`<path d="M${i} ${gy+2} q${(r()*10-5).toFixed(0)} ${(-hh/2).toFixed(0)} ${(r()*8-4).toFixed(0)} ${(-hh).toFixed(0)} l4 0 q${(r()*6-3).toFixed(0)} ${(hh/2).toFixed(0)} 2 ${hh.toFixed(0)} Z"/>`; }
-  s+=grass+`</g><rect y="${gy-2}" width="${W}" height="5" fill="#0c1f08"/>`;
-  // ---- two corn plants with their glowing roots ----
-  s+=epicRoots(250,gy,17,7)+epicRoots(1350,gy,17,13);
-  s+=`<g><animateTransform attributeName="transform" type="rotate" values="0 250 ${gy};1.4 250 ${gy};0 250 ${gy};-1.2 250 ${gy};0 250 ${gy}" dur="7s" repeatCount="indefinite"/>${epicCorn(250,gy,410,3)}</g>`;
-  s+=`<g><animateTransform attributeName="transform" type="rotate" values="0 1350 ${gy};-1.3 1350 ${gy};0 1350 ${gy};1.5 1350 ${gy};0 1350 ${gy}" dur="8s" begin="1.5s" repeatCount="indefinite"/>${epicCorn(1350,gy,430,5)}</g>`;
-  // ---- water, nitrogen, phosphorus glowing in the soil where each one really sits ----
-  const C={water:"#4fc3f7",N:"#57d66d",P:"#ffa640"};
-  for(let i=0;i<34;i++){ const t=["water","N","P","water","N"][i%5], deep=t!=="P";
-    const dx=r()*W, dy=deep?gy+120+r()*(H-gy-160):gy+14+r()*70;
-    s+=`<circle cx="${dx.toFixed(0)}" cy="${dy.toFixed(0)}" r="9" fill="${C[t]}" opacity=".35" filter="url(#wbBlurS)"/>`+
-       `<circle cx="${dx.toFixed(0)}" cy="${dy.toFixed(0)}" r="4.2" fill="${C[t]}"><animate attributeName="opacity" values=".55;1;.55" dur="${(1.6+r()*2).toFixed(1)}s" begin="${(r()*2).toFixed(1)}s" repeatCount="indefinite"/></circle>`; }
-  // ---- dust and pollen floating up through the light ----
-  for(let i=0;i<46;i++){ const px=r()*W, py=gy-r()*380, dur=9+r()*10, dl=-(r()*dur);
-    s+=`<circle cx="${px.toFixed(0)}" cy="${py.toFixed(0)}" r="${(1.3+r()*2).toFixed(1)}" fill="#ffe9b0">`+
-       `<animate attributeName="cy" values="${py.toFixed(0)};${(py-160).toFixed(0)}" dur="${dur.toFixed(1)}s" begin="${dl.toFixed(1)}s" repeatCount="indefinite"/>`+
-       `<animate attributeName="cx" values="${px.toFixed(0)};${(px+30).toFixed(0)};${px.toFixed(0)}" dur="${(dur*0.6).toFixed(1)}s" begin="${dl.toFixed(1)}s" repeatCount="indefinite"/>`+
-       `<animate attributeName="opacity" values="0;.85;.85;0" dur="${dur.toFixed(1)}s" begin="${dl.toFixed(1)}s" repeatCount="indefinite"/></circle>`; }
-  s+=`<rect width="${W}" height="${H}" fill="url(#wbVig)"/>`;
-  return s+`</svg>`;
-}
+  /* The background used to be scenery: a night sky, stars, god rays, two corn
+     plants. Pretty, and it had nothing to do with the choice being made on top
+     of it. Now the background IS the four fields — each one full size, so the
+     wheel in the middle is a small version of the whole screen, and a child can
+     see what every option actually looks like without squinting at a wedge.
 
-/* ---- the avatars that wander the wheel screen ---- */
+     A root grows down through each of them on a loop. This is a game about
+     roots; the ambient motion should be roots. */
+  const Q = [["Perfect","0","0"], ["Drought","50%","0"],
+             ["LowP","0","50%"],  ["LowN","50%","50%"]];
+  const growingRoot =
+    `<g class="qRoot" stroke="#f6e8cc" fill="none" stroke-linecap="round" opacity=".92">`
+    + `<path d="M50 34 C50 48 47 58 49 74 C50 84 49 92 50 99" stroke-width="2.6"/>`
+    + `<path d="M49 46 C42 51 37 57 33 66" stroke-width="1.7"/>`
+    + `<path d="M49 57 C57 61 62 68 65 77" stroke-width="1.7"/>`
+    + `<path d="M49 70 C43 75 39 82 36 91" stroke-width="1.5"/>`
+    + `<path d="M50 80 C56 85 60 90 62 97" stroke-width="1.4"/>`
+    + `</g>`;
+  return Q.map(([e,l,t]) => {
+    const art = weatherArt(e, true)
+      .replace("<svg ", '<svg preserveAspectRatio="xMidYMid slice" ')
+      .replace("</svg>", growingRoot + "</svg>");
+    return `<div class="wq" id="wq_${e}" style="left:${l};top:${t}">${art}</div>`;
+  }).join("");
+}
 function buildWheelChars(){
   const host=document.getElementById("wheelChars"); if(!host || host.firstChild) return;
   const borrow=(who,css)=>{ const src=document.querySelector(`#stage [data-who="${who}"]`); if(!src) return;
@@ -911,7 +886,6 @@ function buildWheelChars(){
 function buildWheelBg(){
   const bg=document.getElementById("wheelBg");
   if(bg && !bg.firstChild) bg.innerHTML=wheelBackdrop();   // built once, then just keeps playing
-  buildWheelChars();
 }
 function buildSpinner(){
   const box=document.getElementById("wheelBox");
@@ -961,6 +935,10 @@ function spin(){
     const E=ENVS[curEnv];
     document.querySelectorAll(".wSlot").forEach(n=>n.classList.remove("won"));
     document.getElementById("wc_"+curEnv).classList.add("won"); Music.sfx("fanfare");
+    /* the payoff: the field you drew lights up across the whole screen, the other
+       three fall back. The wheel stops being a wheel and becomes your field. */
+    ENV_ORDER.forEach(x=>{ const q=document.getElementById("wq_"+x); if(!q) return;
+      q.classList.toggle("lit", x===curEnv); q.classList.toggle("dim", x!==curEnv); });
     document.getElementById("wheelResult").innerHTML=`<b style="font-size:1.3em">${E.name}!</b><br>${E.hint}`;
     document.getElementById("spinBtn").style.display="none";
     document.getElementById("wheelNext").style.display="inline-block";

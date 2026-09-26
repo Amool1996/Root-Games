@@ -1,11 +1,126 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=amazing-roots-games.html">
-<title>Amazing Roots Games</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Root Games — Sidhu Lab</title>
+<meta name="description" content="Two browser games about plant roots, from the Sidhu Lab at the University of Missouri.">
+<meta name="theme-color" content="#3a2415">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:#fff; min-height:100dvh;
+    padding: calc(20px + env(safe-area-inset-top,0px)) 18px calc(28px + env(safe-area-inset-bottom,0px));
+    background:
+      radial-gradient(120% 55% at 50% 0%, #8fd3f4 0%, #cfeefb 40%, transparent 40.5%),
+      linear-gradient(#6b4a2c 40%, #4a3119 70%, #2b1a0c 100%);
+    background-attachment: fixed;
+  }
+  .wrap{max-width:560px;margin:0 auto}
+  header{text-align:center;margin-bottom:22px}
+  h1{margin:0;font-size:clamp(30px,10vw,46px);font-weight:900;letter-spacing:-.5px;
+     color:#1f4d12;text-shadow:0 2px 0 #fff,0 3px 8px rgba(0,0,0,.18)}
+  .sub{margin:6px 0 0;color:#20486b;font-weight:600;font-size:clamp(14px,4vw,17px)}
+
+  .card{display:block;text-decoration:none;color:inherit;background:#fffdf5;
+    border-radius:20px;padding:16px 16px 18px;margin-bottom:16px;
+    box-shadow:0 10px 26px rgba(0,0,0,.42);border:3px solid rgba(255,255,255,.9)}
+  .card:active{transform:translateY(2px)}
+  .art{border-radius:14px;overflow:hidden;background:#2b1a0c;display:block;aspect-ratio:16/7}
+  .art svg{width:100%;height:100%;display:block}
+  .card h2{margin:10px 0 4px;font-size:clamp(20px,6vw,26px);color:#17400d;font-weight:900}
+  .card p{margin:0;color:#4a4034;font-size:clamp(13.5px,3.8vw,15px)}
+  .go{margin-top:12px;display:block;text-align:center;background:linear-gradient(#63c93f,#3d9a22);
+    color:#fff;font-weight:900;font-size:clamp(16px,4.6vw,19px);padding:13px;border-radius:12px;
+    box-shadow:0 5px 0 #2c7018;letter-spacing:.3px}
+  .tag{display:inline-block;background:#ffe9a8;color:#6b4a00;font-weight:800;
+    font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 9px;border-radius:999px}
+
+  footer{margin-top:24px;text-align:center;color:#f2e6d4;font-size:13px;line-height:1.65;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+  footer a{color:#ffe9a8}
+  @media (prefers-reduced-motion:no-preference){ .card{transition:transform .12s ease} }
+</style>
 </head>
 <body>
-<p>Loading the games... <a href="amazing-roots-games.html">Click here if nothing happens.</a></p>
+<div class="wrap">
+
+  <header>
+    <h1>🌽 Root Games</h1>
+    <p class="sub">Two games about the half of the plant you never see.</p>
+  </header>
+
+  <a class="card" href="root-architect.html">
+    <span class="art" aria-hidden="true">
+      <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="s1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7fc6ea"/><stop offset="1" stop-color="#d7eefb"/></linearGradient>
+          <linearGradient id="d1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6b4a2c"/><stop offset="1" stop-color="#2b1a0c"/></linearGradient>
+        </defs>
+        <rect width="320" height="46" fill="url(#s1)"/>
+        <rect y="46" width="320" height="94" fill="url(#d1)"/>
+        <rect y="43" width="320" height="5" fill="#4aa83f"/>
+        <g stroke="#f6ecd6" fill="none" stroke-linecap="round" opacity=".95">
+          <path d="M95 46 C95 70 92 92 94 136" stroke-width="2.6"/>
+          <path d="M94 62 C82 70 74 82 69 100" stroke-width="1.6"/>
+          <path d="M94 82 C107 90 114 102 118 120" stroke-width="1.6"/>
+          <path d="M225 46 C225 62 222 74 224 96" stroke-width="2.6"/>
+          <path d="M224 58 C206 64 192 72 182 84" stroke-width="1.6"/>
+          <path d="M224 70 C243 76 256 84 266 96" stroke-width="1.6"/>
+        </g>
+        <g>
+          <circle cx="60" cy="96" r="4" fill="#2f9fe0"/><circle cx="140" cy="116" r="4" fill="#2f9fe0"/>
+          <circle cx="112" cy="70" r="4" fill="#3fae63"/><circle cx="196" cy="104" r="4" fill="#3fae63"/>
+          <circle cx="248" cy="60" r="4" fill="#e6892a"/><circle cx="176" cy="58" r="4" fill="#e6892a"/>
+        </g>
+        <path d="M95 46 L95 24 M95 30 q-13 -5 -18 -14 M95 34 q13 -4 18 -13"
+              stroke="#3d9a33" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <path d="M225 46 L225 20 M225 26 q-15 -6 -21 -16 M225 31 q15 -5 21 -15"
+              stroke="#5cba4a" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <span class="tag">Design &amp; race</span>
+    <h2>Root Race</h2>
+    <p>Spin for a field, build a corn root from six choices, then watch it grow
+       against the champion root. There is no single best root — a clever root
+       matches its field.</p>
+    <span class="go">PLAY ▶</span>
+  </a>
+
+  <a class="card" href="amazing-roots-games.html">
+    <span class="art" aria-hidden="true">
+      <svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg">
+        <rect width="320" height="140" fill="#2b1a0c"/>
+        <rect width="320" height="44" fill="#8fd3f4"/>
+        <rect y="41" width="320" height="5" fill="#4aa83f"/>
+        <g fill="#fffdf5" opacity=".95">
+          <rect x="20"  y="60" width="80" height="58" rx="10"/>
+          <rect x="120" y="60" width="80" height="58" rx="10"/>
+          <rect x="220" y="60" width="80" height="58" rx="10"/>
+        </g>
+        <g font-size="26" text-anchor="middle" dominant-baseline="central">
+          <text x="60"  y="89">🌱</text><text x="160" y="89">🔬</text><text x="260" y="89">🚜</text>
+        </g>
+      </svg>
+    </span>
+    <span class="tag">Three mini games</span>
+    <h2>Amazing Roots!</h2>
+    <p>Steer a growing root through the soil, label a real maize cross-section,
+       then run a farm on a $100 budget and try to turn a profit.</p>
+    <span class="go">PLAY ▶</span>
+  </a>
+
+  <footer>
+    Made by the <strong>Sidhu Lab</strong> — Division of Plant Science &amp; Technology,<br>
+    University of Missouri. Root growth simulated with
+    <a href="https://gitlab.com/rootmodels/OpenSimRoot">OpenSimRoot</a>.<br>
+    Best on a phone held upright.
+  </footer>
+
+</div>
 </body>
 </html>

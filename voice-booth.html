@@ -1,0 +1,190 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Rooty's Voice Booth</title>
+<style>
+:root{--bg:#141a21;--card:#1d242d;--line:#2d3742;--ink:#eef3f8;--dim:#93a2b4;
+      --go:#4fc38a;--rec:#e0574f;--acc:#f5b942}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:18px 26px;border-bottom:1px solid var(--line);background:#182028;display:flex;
+       gap:18px;align-items:center;flex-wrap:wrap}
+h1{margin:0;font-size:19px}
+header .hint{color:var(--dim);font-size:13px}
+.wrap{max-width:1050px;margin:0 auto;padding:22px 26px 70px}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 30px;margin-bottom:18px}
+.tag{display:inline-block;font:700 12px/1 inherit;letter-spacing:.08em;text-transform:uppercase;
+     padding:6px 10px;border-radius:20px;background:#2b3641;color:var(--dim);margin-bottom:14px}
+.tag.must{background:#3d3418;color:var(--acc)}
+.script{font-size:clamp(22px,3.2vw,34px);line-height:1.45;font-weight:600;margin:0 0 6px}
+.dir{color:var(--dim);font-size:14px;margin-top:14px;font-style:italic}
+.controls{display:flex;gap:11px;align-items:center;flex-wrap:wrap;margin-top:22px}
+button{font:700 15px/1 inherit;padding:14px 20px;border-radius:10px;border:1px solid var(--line);
+       background:#262f3a;color:var(--ink);cursor:pointer}
+button:hover:not(:disabled){border-color:#4a5a6c}
+button:disabled{opacity:.4;cursor:default}
+button.rec{background:var(--rec);border-color:var(--rec);color:#fff;min-width:190px}
+button.rec.on{background:#7d1f1a;border-color:var(--rec);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.62}}
+button.go{background:var(--go);border-color:var(--go);color:#062015}
+.meter{height:12px;flex:1;min-width:150px;max-width:260px;background:#0e1319;border-radius:6px;overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4fc38a,#f5b942,#e0574f);transition:width .06s}
+.pages{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.pg{width:48px;height:42px;border-radius:8px;border:1px solid var(--line);background:#1d242d;
+    color:var(--dim);font:700 13px/1 inherit;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pg.must{border-color:#5d5120;color:var(--acc)}
+.pg.done{background:var(--go);border-color:var(--go);color:#062015}
+.pg.cur{outline:2px solid var(--ink);outline-offset:2px}
+.note{background:#1d242d;border:1px solid var(--line);border-left:3px solid var(--acc);
+      border-radius:9px;padding:14px 17px;color:var(--dim);font-size:13.5px;margin:16px 0}
+.note b{color:var(--ink)} code{background:#0e1319;padding:2px 6px;border-radius:4px;font-size:12.5px;color:#9fd3b4}
+#status{color:var(--dim);font-size:13.5px;min-height:20px;margin-top:10px}
+</style></head><body>
+<header>
+  <h1>🎙️ Rooty's Voice Booth</h1>
+  <span class="hint">Read each page out loud, warm and slow, the way you would to a class of
+    six-year-olds. <b>Space</b> = start/stop. <b>←→</b> = change page.</span>
+</header>
+<div class="wrap">
+
+  <div class="note">
+    <b>Only the 8 gold pages matter for tomorrow</b> — those are the short cut the booth plays.
+    Each recording downloads itself the moment you stop, already named correctly. Pause a beat
+    between sentences; the picture on screen waits for your voice, however long you take.
+  </div>
+
+  <div class="stage">
+    <span class="tag" id="tag">page</span>
+    <p class="script" id="script">…</p>
+    <p class="dir" id="dir"></p>
+    <div class="controls">
+      <button class="rec" id="recBtn">● Record</button>
+      <button id="playBtn" disabled>▶ Hear it back</button>
+      <button id="againBtn" disabled>↻ Record again</button>
+      <div class="meter"><i id="lvl"></i></div>
+      <button class="go" id="nextBtn">Next page →</button>
+      <label style="display:flex;gap:7px;align-items:center;color:var(--dim);font-size:13.5px;cursor:pointer">
+        <input type="checkbox" id="boothOnly" checked style="width:17px;height:17px;accent-color:var(--go)">
+        Booth cut only
+      </label>
+    </div>
+    <div id="status">Click Record and allow the microphone.</div>
+  </div>
+
+  <div class="pages" id="pages"></div>
+
+  <div class="note" style="margin-top:22px">
+    <b>When you are done:</b> the files land in your Downloads folder as <code>p01.webm</code>,
+    <code>p08.webm</code>… Tell me and I convert them to mp3 and drop them into
+    <code>ra-data/voice/</code> — the game picks them up with no code change, and any page you
+    skipped quietly falls back to the built-in voice.
+  </div>
+</div>
+
+<script>
+/* the SHORT-CUT wording, which is what the booth actually plays */
+const PAGES = [
+ {id:"p01", must:1, text:"Hi! I am Rooty. I am a root, and I live under the ground.",
+  dir:"Bright and friendly — this is hello."},
+ {id:"p02", text:"Look at this corn plant. On top, you can see the green leaves. But almost half of the plant is hidden under the soil. That hidden half, is me."},
+ {id:"p03", text:"My first job is to hold on tight. When the wind blows hard, I grip the soil with all my might. That is why the plant does not fall over."},
+ {id:"p04", text:"My second job is to drink. I pull water out of the soil, all day long. On a hot day, one corn plant can drink a big bottle of water."},
+ {id:"p05", text:"My third job is to eat. Plants need food from the soil, just like you need food on your plate. Nitrogen makes the leaves big and green. Phosphorus helps the roots grow strong."},
+ {id:"p06", text:"Now, let me show you my secret. Look very, very close. I am covered in thousands of tiny hairs. They are too small for your eyes to see, but they do most of the drinking. More hairs, means more water and more food."},
+ {id:"p07", text:"How do I grow? Only my very tip grows. It pushes between the bits of soil, a little bit further every day. In one month, I can grow deeper than you are tall."},
+ {id:"p08", must:1, text:"My job is to drink water, and eat plant food from the soil. I send it all up to the leaves. That is how the plant grows big and strong.",
+  dir:"Proud of the job."},
+ {id:"p09", must:1, text:"When there is no rain, the water hides deep down. Can you guess who wins? The deep root!",
+  dir:"Ask the question — then pause — then the answer, delighted."},
+ {id:"p10", must:1, text:"When the soil runs out of nitrogen, the rain washes it down deep too. So the deep root wins again.",
+  dir:"\"Again\" is the joke — lean on it."},
+ {id:"p11", must:1, text:"But phosphorus sticks near the top. Digging deep will not help here. This time the short fuzzy root wins!",
+  dir:"\"But\" flips the lesson. Surprise in the voice."},
+ {id:"p12", must:1, text:"A plant only has so much energy. Thin roots with air inside are cheap, so you get much more root!",
+  dir:"Conspiratorial — this is the clever trick."},
+ {id:"p13", must:1, text:"Lots of side roots catch lots of food up top. But in a dry year, go deeper instead!",
+  dir:"A gentle warning on the second half."},
+ {id:"p14", text:"So, young scientists, what did we learn? There is no single best root. The best root is the one that matches its field. And that is exactly what real scientists study."},
+ {id:"p15", must:1, text:"Now it is your turn. Spin the field wheel, and grow the biggest plant!",
+  dir:"Big send-off. This is the line that starts the game."}
+];
+
+let idx=0, rec=null, chunks=[], stream=null, analyser=null, lvlTimer=null, lastURL=null, done={};
+const $=id=>document.getElementById(id);
+/* The booth plays only the 8 short-cut pages. Recording the other 7 is mostly wasted
+   effort, so they are hidden unless you ask for them. */
+let boothOnly=true;
+const LIST=()=> boothOnly ? PAGES.filter(p=>p.must) : PAGES;
+
+function paint(){
+  const L=LIST(); if(idx>=L.length) idx=0;
+  const p=L[idx];
+  const doneN=L.filter(q=>done[q.id]).length;
+  $("tag").textContent = (p.must ? `${p.id.toUpperCase()} · booth page` : `${p.id.toUpperCase()} · full story only`)
+                         + ` · ${doneN} of ${L.length} recorded`;
+  $("tag").className = "tag" + (p.must?" must":"");
+  $("script").textContent = p.text;
+  $("dir").textContent = p.dir || "";
+  $("playBtn").disabled = !done[p.id];
+  $("againBtn").disabled = !done[p.id];
+  $("pages").innerHTML = L.map((q,i)=>
+    `<button class="pg${q.must?" must":""}${done[q.id]?" done":""}${i===idx?" cur":""}" data-i="${i}">${q.id.slice(1)}</button>`).join("");
+}
+$("pages").addEventListener("click",e=>{ const b=e.target.closest(".pg"); if(b){ idx=+b.dataset.i; paint(); } });
+$("nextBtn").onclick = ()=>{ idx=(idx+1)%LIST().length; paint(); };
+$("boothOnly").onchange = e=>{ boothOnly=e.target.checked; idx=0; paint(); };
+
+async function mic(){
+  if(stream) return stream;
+  stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  const ac=new AudioContext(), src=ac.createMediaStreamSource(stream);
+  analyser=ac.createAnalyser(); analyser.fftSize=512; src.connect(analyser);
+  const d=new Uint8Array(analyser.fftSize);
+  lvlTimer=setInterval(()=>{ analyser.getByteTimeDomainData(d);
+    let s=0; for(let i=0;i<d.length;i++){ const v=(d[i]-128)/128; s+=v*v; }
+    $("lvl").style.width = Math.min(100, Math.sqrt(s/d.length)*320) + "%";
+  },60);
+  return stream;
+}
+$("recBtn").onclick = async ()=>{
+  if(rec && rec.state==="recording"){ rec.stop(); return; }
+  try{ await mic(); }catch(e){ $("status").textContent="Could not open the microphone: "+e.message; return; }
+  const p=LIST()[idx];
+  $("recBtn").disabled=true;
+  /* Start the recorder BEFORE the countdown, not after. The browser's capture
+     pipeline takes a moment to spin up, and if it is still warming while you
+     start talking it swallows the first word or two — which is exactly how the
+     first take of p01 lost "Hi! I am Rooty." The countdown is now recorded as
+     silence and trimmed off later, which costs nothing and can never eat a word. */
+  chunks=[]; rec=new MediaRecorder(stream,{mimeType:"audio/webm"});
+  rec.ondataavailable=e=>{ if(e.data.size) chunks.push(e.data); };
+  rec.onstop=()=>{
+    const blob=new Blob(chunks,{type:"audio/webm"});
+    if(lastURL) URL.revokeObjectURL(lastURL);
+    lastURL=URL.createObjectURL(blob);
+    done[p.id]=lastURL;
+    const a=document.createElement("a"); a.href=lastURL; a.download=p.id+".webm"; a.click();
+    $("recBtn").textContent="● Record"; $("recBtn").classList.remove("on"); $("recBtn").disabled=false;
+    $("status").textContent = `Saved ${p.id}.webm to Downloads. Hear it back, or move on.`;
+    paint();
+  };
+  rec.start();
+  $("recBtn").textContent="■ Stop"; $("recBtn").classList.add("on"); $("recBtn").disabled=false;
+  $("status").innerHTML='<span style="opacity:.7">getting ready…</span>';
+  await new Promise(r=>setTimeout(r,500));           // let the pipeline settle
+  for(const n of ["3…","2…","1…"]){
+    if(!rec || rec.state!=="recording") return;      // they hit stop during the countdown
+    $("status").innerHTML='<span style="font-size:19px;font-weight:700">'+n+'</span>';
+    await new Promise(r=>setTimeout(r,650));
+  }
+  if(!rec || rec.state!=="recording") return;
+  $("status").innerHTML='<b style="color:var(--go);font-size:18px">● SPEAK NOW</b>'
+                      + '<span style="color:var(--dim);font-size:13px"> — read the line above, then press Space</span>';
+};
+$("playBtn").onclick = ()=>{ const u=done[LIST()[idx].id]; if(u) new Audio(u).play(); };
+$("againBtn").onclick = ()=>{ delete done[LIST()[idx].id]; paint(); $("status").textContent="Ready to record over it."; };
+addEventListener("keydown",e=>{
+  if(e.key===" "){ e.preventDefault(); $("recBtn").click(); }
+  if(e.key==="ArrowRight"){ idx=Math.min(LIST().length-1,idx+1); paint(); }
+  if(e.key==="ArrowLeft"){  idx=Math.max(0,idx-1); paint(); }
+});
+paint();
+</script></body></html>

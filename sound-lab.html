@@ -1,0 +1,298 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>Root Race — Sound Lab</title>
+<style>
+:root{--bg:#12161c;--card:#1b2129;--line:#2b3440;--ink:#e8edf3;--dim:#93a2b4;
+      --old:#c77f52;--new:#4fc38a;--acc:#f5b942}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:0 0 60px}
+header{padding:26px 24px 18px;border-bottom:1px solid var(--line);background:#151b22}
+h1{margin:0 0 6px;font-size:22px}
+header p{margin:0;color:var(--dim);max-width:70ch}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);
+   margin:30px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+table{width:100%;border-collapse:collapse}
+td,th{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle;text-align:left}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-weight:600}
+.scr{font-weight:700;white-space:nowrap}
+.why{color:var(--dim);font-size:13px}
+button{font:600 13px/1 inherit;padding:9px 13px;border-radius:8px;border:1px solid var(--line);
+       background:#232b35;color:var(--ink);cursor:pointer;white-space:nowrap}
+button:hover{border-color:#455465}
+button.old{border-color:#6b4a30}  button.old.on{background:var(--old);color:#1a1005;border-color:var(--old)}
+button.new{border-color:#2d6b4f}  button.new.on{background:var(--new);color:#05170e;border-color:var(--new)}
+button.big{padding:12px 18px;font-size:14px}
+button.stop{border-color:#6b3030}
+.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar{position:sticky;top:0;z-index:5;background:#151b22;border-bottom:1px solid var(--line);
+     padding:12px 24px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#now{font-weight:700;color:var(--acc);min-width:290px}
+.knob{display:flex;align-items:center;gap:9px;margin:9px 0}
+.knob label{width:190px;color:var(--dim);font-size:13px}
+.knob input{flex:1;max-width:330px;accent-color:var(--new)}
+.knob output{width:74px;font-variant-numeric:tabular-nums;color:var(--acc);font-weight:700}
+.note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--acc);
+      border-radius:8px;padding:13px 15px;color:var(--dim);font-size:13px;margin:12px 0}
+.note b{color:var(--ink)}
+ul{margin:8px 0;padding-left:20px;color:var(--dim);font-size:13px}
+li{margin:4px 0}
+code{background:#0e1319;padding:1px 5px;border-radius:4px;font-size:12px;color:#9fd3b4}
+</style></head><body>
+
+<header>
+  <h1>🔊 Root Race — Sound Lab</h1>
+  <p>The engine that ships today, against a rewritten one, on the same patterns. Press the two
+     buttons on a row back to back and trust your ears. Everything is synthesized live — nothing
+     here is a recording.</p>
+</header>
+
+<div class="bar">
+  <button class="big stop" onclick="stopAll()">■ Stop</button>
+  <button class="big" id="journeyBtn" onclick="toggleJourney()">▶ Walk the whole journey (new)</button>
+  <button class="big" onclick="toggleJourney('old')">▶ …the old one</button>
+  <span id="now">nothing playing</span>
+</div>
+
+<div class="wrap">
+
+<h2>One screen at a time</h2>
+<table id="tbl"><thead><tr><th>Screen</th><th>Listen</th><th>What the new one does differently</th></tr></thead><tbody></tbody></table>
+
+<h2>The race screen listens to the root</h2>
+<div class="note">
+  The new <b>grow</b> patch takes an intensity from 0 to 1. The game feeds it the growth progress,
+  so the filter opens and a counter-melody joins as the root fills the soil — day 40 is the fullest
+  the music ever gets. Play <b>grow (new)</b> above, then drag this.
+</div>
+<div class="knob"><label>Root growth (day 0 → 40)</label>
+  <input type="range" min="0" max="100" value="0" oninput="NewMusic.intensity(this.value/100);o_int.value=this.value+'%'">
+  <output id="o_int">0%</output></div>
+
+<h2>Tuning knobs — tell me a number and I'll bake it in</h2>
+<div class="note">These move the <b>new</b> engine only, live. Shout a direction
+  ("brighter", "less echo") or a number and it goes into the game as the default.</div>
+<div class="knob"><label>Brightness (lowpass Hz)</label>
+  <input type="range" min="700" max="6000" step="100" value="3200"
+         oninput="NewMusic._dbg.setCut(+this.value);o_cut.value=this.value+' Hz'">
+  <output id="o_cut">3200 Hz</output></div>
+<div class="knob"><label>Room / echo</label>
+  <input type="range" min="0" max="180" value="90"
+         oninput="NewMusic._dbg.setWet(this.value/100);o_wet.value=(this.value/100).toFixed(2)">
+  <output id="o_wet">0.90</output></div>
+<div class="knob"><label>Warmth (top-end shelf, dB)</label>
+  <input type="range" min="-16" max="0" step="1" value="-7"
+         oninput="NewMusic._dbg.setTilt(+this.value);o_tilt.value=this.value+' dB'">
+  <output id="o_tilt">-7 dB</output></div>
+<div class="knob"><label>Hard ceiling (nothing above this)</label>
+  <input type="range" min="1200" max="6000" step="100" value="3000"
+         oninput="NewMusic._dbg.setCeiling(+this.value);o_ceil.value=this.value+' Hz'">
+  <output id="o_ceil">3000 Hz</output></div>
+<div class="knob"><label>Overall volume</label>
+  <input type="range" min="0" max="150" value="100"
+         oninput="NewMusic._dbg.setVol(this.value/100);o_vol.value=this.value+'%'">
+  <output id="o_vol">100%</output></div>
+
+<h2>Sound effects</h2>
+<table><thead><tr><th>Effect</th><th>Listen</th><th>Change</th></tr></thead><tbody id="sfxBody"></tbody></table>
+
+<h2>Measured, not claimed</h2>
+<div class="note">
+  Rendered each loop through an analyser and integrated the spectrum over 4 s. Share of total
+  energy sitting <b>above 3 kHz</b> — the band that makes a booth speaker tiring:
+  <table style="margin-top:10px">
+    <tr><th>Screen</th><th>old</th><th>new</th><th>loudest partial, new</th></tr>
+    <tr><td>Start screen</td><td style="color:#e0574f">41.1%</td><td style="color:#4fc38a">0.1%</td><td>328 Hz</td></tr>
+    <tr><td>Field wheel</td><td style="color:#e0574f">2.4%</td><td style="color:#4fc38a">0.1%</td><td>387 Hz</td></tr>
+    <tr><td>Leaderboard</td><td>0.3%</td><td style="color:#4fc38a">0.1%</td><td>94 Hz</td></tr>
+    <tr><td>The race</td><td>0.0%</td><td>0.0%</td><td>258 Hz</td></tr>
+  </table>
+  The start screen was the bad one: 41% of its sound sat above 3 kHz, almost all of it the hats.
+  There is now a shelf at 1.8 kHz (&minus;7 dB) and a hard lowpass at 3 kHz that <b>every</b> sound
+  passes through, effects included — so no future edit can reintroduce a shriek.
+</div>
+
+<h2>🎙️ Rooty's voice</h2>
+<div class="note">
+  Today the story is read by whatever voice the computer has — <b>Microsoft Zira</b> on the Windows
+  booth laptop. It cannot be improved by code, only replaced by a file. Any <code>.mp3</code> in
+  <code>ra-data/voice/</code> wins over it, per page, with no code change — so this is also the one
+  change that makes the voice <b>the same on every machine</b>.
+  <div class="row" style="margin-top:14px">
+    <a href="voice-booth.html" target="_blank"><button class="big" style="background:#4fc38a;border-color:#4fc38a;color:#062015">🎙️ Open the recording booth →</button></a>
+    <span class="why">Teleprompter for the 8 booth lines. Space to record, downloads each file
+      already named. About ten minutes.</span>
+  </div>
+</div>
+<div class="note">
+  <b>If nobody records tonight</b>, this Mac can generate all 15 pages as files, which still beats
+  Zira and removes the Windows dependency. Same two lines from each candidate — pick one:
+  <table style="margin-top:10px" id="vtbl"></table>
+  <span class="why">No Premium/Enhanced Apple voices are installed on this Mac, so these are the
+    built-in set. A human reading it is still better than the best of them.</span>
+</div>
+
+<h2>What changed in the chain</h2>
+<ul>
+  <li><b>A limiter on the output.</b> The old mix summed straight into the speakers and clipped on
+      busy beats — that crackle is most of what reads as "annoying".</li>
+  <li><b>Every voice is filtered.</b> The old engine used bare oscillators; a raw <code>square</code>
+      (the wheel) keeps every harsh harmonic. Now each note has its own lowpass, and the music bus
+      has a brightness control per screen.</li>
+  <li><b>A short room.</b> A 1.7 s reverb at 14–42% depending on screen. This is the single biggest
+      "toy → instrument" step.</li>
+  <li><b>Four-bar patterns, not two</b>, with a variation in bars 3–4, plus ±6 ms and ±9% wobble on
+      every note, so it stops sounding like a machine.</li>
+  <li><b>The hats are gone.</b> Eight per bar of 7 kHz noise was the most fatiguing thing in the
+      mix. Grooves are now a soft kick, an oom-pah brush or a shaker on one 16th in eight.</li>
+  <li><b>Long-dwell screens calm themselves.</b> Title after 45 s, leaderboard after 20 s, thin out
+      to ~45% instead of nagging a queue.</li>
+  <li><b>Real instruments per place</b> — marimba, music box, filtered reed, warm pad — so
+      <i>where you are</i> is audible, not just <i>how fast</i>.</li>
+</ul>
+
+</div>
+
+<script src="sound-lab/capture.js"></script>
+<script src="sound-lab/old-engine.js"></script>
+<script src="sound-lab/new-engine.js"></script>
+<script>
+/* ---- which AudioContext belongs to which engine, so Stop really stops ---- */
+let oldCtxFrom=0, newCtxFrom=0, started={old:false,new:false};
+function bootEngine(which){
+  if(started[which]) return;
+  const before = LAB_CTX.length;
+  (which==="old"?OldMusic:NewMusic).start();
+  if(which==="old") oldCtxFrom=before; else newCtxFrom=before;
+  started[which]=true;
+}
+function ctxOf(which){
+  const from = which==="old"?oldCtxFrom:newCtxFrom;
+  const to   = which==="old" ? (started["new"]&&newCtxFrom>oldCtxFrom?newCtxFrom:LAB_CTX.length)
+                             : (started["old"]&&oldCtxFrom>newCtxFrom?oldCtxFrom:LAB_CTX.length);
+  return LAB_CTX.slice(from,to);
+}
+function silence(which){ ctxOf(which).forEach(c=>{ try{ c.suspend(); }catch(e){} }); }
+function unsilence(which){ ctxOf(which).forEach(c=>{ try{ c.resume(); }catch(e){} }); }
+
+/* ---- the screens ---- */
+const SCREENS=[
+ ["title","Start screen",                 "title","title",
+  "112 bpm not 128, marimba instead of a raw triangle, a soft kick on the beat, four bars with a lift — and it thins out after 45 s so a queue is not hammered."],
+ ["story","Rooty's Story",                "story","story",
+  "A real music box (fundamental + twelfth + a high partial) with a long tail and 42% room. Sits further under the narration."],
+ ["who","Type your name",                 "design","who",
+  "Its own patch at last — the old build reused the design loop here. A near-silent pad at 70 bpm, so hunting for letters is not hurried."],
+ ["wheel","The field wheel",              "wheel","wheel",
+  "Still carnival, still a square — but through a resonant lowpass at 4× the note, two oscillators detuned 14 cents, and a brushed oom-pah instead of hats."],
+ ["design","Build your root",             "design","design",
+  "94 bpm, A minor pentatonic, long gaps. Six decisions should not feel like a countdown."],
+ ["grow","The race",                      "grow","grow",
+  "Music box arpeggios that OPEN as the root grows (see the slider below) — the strongest 'where am I' cue in the game."],
+ ["results","Your score",                 "party","results",
+  "No longer the party loop. You are reading six reasons and a stats table here, so it is a warm resolved pad at 84 bpm."],
+ ["party","Leaderboard / celebration",    "party","party",
+  "Still bright, but filtered, and it settles to a gentle version after 20 s — a booth board can sit on screen for ten minutes."]
+];
+const tb=document.querySelector("#tbl tbody");
+SCREENS.forEach(([key,label,oldPat,newPat,why])=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td class="scr">${label}</td>
+    <td><div class="row">
+      <button class="old" data-e="old" data-p="${oldPat}">OLD ▶</button>
+      <button class="new" data-e="new" data-p="${newPat}">NEW ▶</button>
+    </div></td>
+    <td class="why">${why}</td>`;
+  tb.appendChild(tr);
+});
+
+let cur=null;
+function playPat(which,patName,label){
+  stopJourney();
+  bootEngine(which);
+  const other = which==="old"?"new":"old";
+  if(started[other]) silence(other);
+  unsilence(which);
+  (which==="old"?OldMusic:NewMusic).play(patName);
+  cur={which,patName};
+  document.querySelectorAll("#tbl button").forEach(b=>b.classList.remove("on"));
+  document.querySelectorAll(`#tbl button[data-e="${which}"][data-p="${patName}"]`).forEach(b=>b.classList.add("on"));
+  document.getElementById("now").textContent =
+    (which==="old"?"OLD":"NEW") + " · " + (label||patName);
+}
+document.querySelector("#tbl").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-p]"); if(!b) return;
+  const label=b.closest("tr").querySelector(".scr").textContent;
+  playPat(b.dataset.e,b.dataset.p,label);
+});
+function stopAll(){
+  stopJourney();
+  ["old","new"].forEach(w=>{ if(started[w]) silence(w); });
+  document.querySelectorAll("button.on").forEach(b=>b.classList.remove("on"));
+  document.getElementById("now").textContent="nothing playing";
+  cur=null;
+}
+
+/* ---- the journey: hear the transitions, which is the whole point ---- */
+const WALK=[["title","Start screen",13],["story","Rooty's Story",13],["who","Type your name",9],
+            ["wheel","The field wheel",11],["design","Build your root",13],["grow","The race",16],
+            ["results","Your score",13],["party","Leaderboard",13]];
+let jT=null, jI=0, jWhich="new";
+function toggleJourney(which){
+  const w=which||"new";
+  if(jT && jWhich===w){ stopJourney(); return; }
+  stopJourney(); jWhich=w; jI=0; stepJourney();
+}
+function stepJourney(){
+  if(jI>=WALK.length){ stopJourney(); return; }
+  const [key,label,secs]=WALK[jI];
+  const row=SCREENS.find(s=>s[0]===key);
+  const patName = jWhich==="old"? row[2] : row[3];
+  bootEngine(jWhich);
+  const other=jWhich==="old"?"new":"old"; if(started[other]) silence(other);
+  unsilence(jWhich);
+  (jWhich==="old"?OldMusic:NewMusic).play(patName);
+  if(jWhich==="new" && key==="grow"){        // show the dynamic race music off
+    let v=0; const ramp=setInterval(()=>{ v+=.06; NewMusic.intensity(Math.min(1,v));
+      if(v>=1) clearInterval(ramp); },600);
+  }
+  document.getElementById("now").textContent =
+    `${jWhich.toUpperCase()} · journey ${jI+1}/${WALK.length} — ${label}`;
+  document.getElementById("journeyBtn").textContent="■ Stop the journey";
+  jI++; jT=setTimeout(stepJourney, secs*1000);
+}
+function stopJourney(){
+  if(jT){ clearTimeout(jT); jT=null; }
+  document.getElementById("journeyBtn").textContent="▶ Walk the whole journey (new)";
+}
+
+/* ---- sfx ---- */
+const SFX=[["click","Tapping a trait card","A soft marimba knock instead of a bare triangle beep."],
+           ["tick","Wheel ticks","Quieter, bandpassed at 3.4 kHz — the old tick was 5× the music's own hats and leaked onto the music bus."],
+           ["fanfare","The wheel lands","Marimba arpeggio into a music-box triad, with room on it."],
+           ["chime","Something good happens","A real bell triad rather than three sines."],
+           ["pop","The root drinks","Softer, lowpassed, and randomly pitched each time so 40 drinks in 14 s do not sound like a machine."],
+           ["count","Score counting up","A whisper of noise instead of a square blip."]];
+const sb=document.getElementById("sfxBody");
+SFX.forEach(([k,label,why])=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td class="scr">${label}</td>
+    <td><div class="row">
+      <button class="old" onclick="bootEngine('old');unsilence('old');OldMusic.sfx('${k}')">OLD ▶</button>
+      <button class="new" onclick="bootEngine('new');unsilence('new');NewMusic.sfx('${k}')">NEW ▶</button>
+    </div></td><td class="why">${why}</td>`;
+  sb.appendChild(tr);
+});
+
+const VOICES=[["samantha","Samantha","The classic macOS voice — clear, a bit flat."],
+              ["sandy","Sandy","Newer Apple voice, warmer and more natural."],
+              ["shelley","Shelley","Newer Apple voice, lighter and brighter."],
+              ["flo","Flo","Newer Apple voice, lively."],
+              ["grandma","Grandma","Older-sounding, storybook warmth — arguably the best fit for Rooty."]];
+const vt=document.getElementById("vtbl");
+vt.innerHTML = "<tr><th>Voice</th><th>Listen</th><th></th></tr>" + VOICES.map(([f,n,d])=>
+  `<tr><td class="scr">${n}</td>
+     <td><button onclick="stopAll();new Audio('sound-lab/voice-samples/${f}.mp3').play()">▶ Play</button></td>
+     <td class="why">${d}</td></tr>`).join("");
+addEventListener("keydown",e=>{ if(e.key===" "){ e.preventDefault(); stopAll(); } });
+</script>
+</body></html>

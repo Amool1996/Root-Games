@@ -213,15 +213,18 @@
   /* the race is the picture; the button sits ON it rather than stealing a band
      of height from it. sc is limited by height, so that band was root. */
   #s_sim { position:relative; }
-  #s_sim > h2#simTitle { margin:6px 0 4px; }
+  /* No title on the race. The Day badge, the field badge, the two panel labels
+     and the HARVEST button already say everything it said — and it was costing
+     ~95px of height, which sc spends on roots. */
+  #s_sim > h2#simTitle { display:none; }
   #simWrap { position:relative; display:inline-block; }
   /* the wrapper does the centring; the button keeps its pulse. Putting
      translateX on the button itself loses that fight — btnPulse animates transform. */
   #harvestWrap { position:absolute; left:0; right:0; bottom:2.5%; text-align:center; z-index:6; pointer-events:none; }
   #harvestWrap #harvestBtn { pointer-events:auto; box-shadow:0 8px 26px rgba(0,0,0,.55); }
-  #dayBadge { position:absolute; top:10px; left:12px; background:rgba(0,0,0,.55); color:#fff;
+  #dayBadge { position:absolute; top:60px; left:12px; background:rgba(0,0,0,.55); color:#fff;
     padding:6px 14px; border-radius:12px; font-size:22px; font-weight:bold; }
-  #envBadge { position:absolute; top:10px; right:12px; background:rgba(0,0,0,.55); color:#fff;
+  #envBadge { position:absolute; top:60px; right:12px; background:rgba(0,0,0,.55); color:#fff;
     padding:6px 14px; border-radius:12px; font-size:22px; }
   #scoreBig { font-size:min(18vw,110px); font-weight:900; color:#ffe14d; text-shadow:4px 4px 0 #3d2b15; }
   .statHead { font-weight:900; font-size:min(4.5vw,24px); margin-bottom:4px; }
@@ -1256,6 +1259,26 @@ function makeSoil(PW,H,soilY,sc,visD,seed){
 }
 /* the scoreboard in the sky between the two plants: for water, N and P, what each root has taken
    up so far rises ABOVE the ground line, what is still in the soil hangs BELOW it and shrinks */
+/* a tapered pail: wider at the rim than the base, filled from the bottom */
+function drawBucket(ctx,x,y,w,h,fr,col,rim){
+  const inset=w*0.13;
+  const shell=()=>{ ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+w,y);
+    ctx.lineTo(x+w-inset,y+h); ctx.lineTo(x+inset,y+h); ctx.closePath(); };
+  shell(); ctx.fillStyle="rgba(255,255,255,.10)"; ctx.fill();          // the empty part
+  if(fr>0.004){
+    ctx.save(); shell(); ctx.clip();
+    const fh=h*fr, fy=y+h-fh;
+    const g=ctx.createLinearGradient(0,fy,0,y+h);
+    g.addColorStop(0,"#ffffff"); g.addColorStop(.20,col); g.addColorStop(1,col);
+    ctx.fillStyle=g; ctx.fillRect(x-3,fy,w+6,fh+3);
+    ctx.fillStyle="rgba(255,255,255,.6)";                              // the surface of what is in it
+    ctx.fillRect(x-3,fy,w+6,Math.max(1.6,h*0.016));
+    ctx.restore();
+  }
+  shell(); ctx.strokeStyle=rim; ctx.lineWidth=2.6; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-2.5,y); ctx.lineTo(x+w+2.5,y);         // a thick rim to grip
+  ctx.strokeStyle=rim; ctx.lineWidth=4.5; ctx.lineCap="round"; ctx.stroke();
+}
 function drawStats(ctx,panels,W,H,day,endDay){
   // the panel fills the sky down to the ground line (the plant names sit just under that line)
   const narrow=W<600;                                        // a phone: one column, badges above
@@ -1287,20 +1310,27 @@ function drawStats(ctx,panels,W,H,day,endDay){
   const base=y0+ph*0.72, up=ph*0.33, down=ph*0.08, types=["water","N","P"], colW=pw/3;
   ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x0+12,base); ctx.lineTo(x0+pw-12,base); ctx.stroke();
   ctx.textAlign="center";
+  /* Buckets, not bars. A bar is a chart; a bucket is a thing you fill, and a
+     six-year-old reads "my bucket is half full" from across a booth without
+     being taught how. Water blue, nitrogen green, phosphorus orange — the same
+     colours as the dots in the soil, so the bucket and the thing it holds match. */
   types.forEach((ty,ti)=>{
-    const gx=x0+colW*ti+colW/2, bw=Math.max(12,colW*0.26);
+    const gx=x0+colW*ti+colW/2, bw=Math.max(15,colW*0.30);
     panels.forEach((P,pi)=>{
       let tot=0, eat=0; for(const d of P.dots){ if(d.type!==ty) continue; tot++; if(d.gone) eat++; }
-      const fr=eat/Math.max(1,tot), bx=gx+(pi?4:-bw-4), top=base-up*fr;
-      const g=ctx.createLinearGradient(0,top,0,base); g.addColorStop(0,"#ffffff"); g.addColorStop(0.35,RES[ty].c); g.addColorStop(1,RES[ty].c);
-      ctx.shadowColor=RES[ty].c; ctx.shadowBlur=pi?0:12;
-      ctx.fillStyle=g; roundRect(ctx,bx,top-1,bw,up*fr+1,4); ctx.fill();                       // taken: rises
-      ctx.shadowBlur=0; ctx.strokeStyle=pi?"#ffffff":"#ffd23f"; ctx.lineWidth=2.5; ctx.stroke();
-      ctx.fillStyle="rgba(160,120,80,.95)"; roundRect(ctx,bx,base+3,bw,Math.max(2,down*(1-fr)),3); ctx.fill(); // left: hangs
-      ctx.fillStyle="#fff"; ctx.font=f(0.085,true); ctx.fillText(Math.round(fr*100)+"%", bx+bw/2, top-ph*0.06);  // the number
+      const fr=eat/Math.max(1,tot), bx=gx+(pi?7:-bw-7);
+      drawBucket(ctx, bx, base-up, bw, up, fr, RES[ty].c, pi?"#ffffff":"#ffd23f");
+      ctx.fillStyle="#fff"; ctx.font=f(0.10,true); ctx.textAlign="center";
+      ctx.fillText(Math.round(fr*100)+"%", bx+bw/2, base-up-ph*0.055);
     });
-    ctx.fillStyle="#fff"; ctx.font=f(0.105,true);
-    ctx.fillText(RES[ty].label, gx, y0+ph*0.905);
+    /* a fat dot of the resource's own colour, then its name */
+    const ly=y0+ph*0.90, rr=ph*0.055;
+    ctx.beginPath(); ctx.arc(gx-colW*0.20, ly-rr*0.35, rr, 0, 7);
+    ctx.fillStyle=RES[ty].c; ctx.fill();
+    ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle="#fff"; ctx.font=f(0.105,true); ctx.textAlign="left";
+    ctx.fillText(RES[ty].label.replace(/^\S+\s/,""), gx-colW*0.20+rr+6, ly-rr*0.35);
+    ctx.textAlign="center";
   });
   /* ---- WHO IS WINNING, RIGHT NOW ----------------------------------------
      Without this the race is a 14-second replay of a result that was decided
@@ -1340,7 +1370,7 @@ async function runSim(){
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
   // a window that is mid-resize (or minimised) can report 0; a 0-high canvas makes drawImage throw
-  const W=Math.max(280, Math.min(window.innerWidth-24, 1800)), H=Math.max(320, Math.min(window.innerHeight*0.86, 1060));
+  const W=Math.max(280, Math.min(window.innerWidth-24, 1800)), H=Math.max(320, Math.min(window.innerHeight*0.95, 1180));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
   const PW=W/2, soilY=H*0.34;  // sky holds the scoreboard and both plants; the rest is the root's

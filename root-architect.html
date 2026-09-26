@@ -208,6 +208,15 @@
   /* sim + results */
   #simWrap { position:relative; }
   #simCanvas { background:transparent; border-radius:10px; box-shadow:0 10px 34px rgba(0,0,0,.5); display:block; }
+  /* the race is the picture; the button sits ON it rather than stealing a band
+     of height from it. sc is limited by height, so that band was root. */
+  #s_sim { position:relative; }
+  #s_sim > h2#simTitle { margin:6px 0 4px; }
+  #simWrap { position:relative; display:inline-block; }
+  /* the wrapper does the centring; the button keeps its pulse. Putting
+     translateX on the button itself loses that fight — btnPulse animates transform. */
+  #harvestWrap { position:absolute; left:0; right:0; bottom:2.5%; text-align:center; z-index:6; pointer-events:none; }
+  #harvestWrap #harvestBtn { pointer-events:auto; box-shadow:0 8px 26px rgba(0,0,0,.55); }
   #dayBadge { position:absolute; top:10px; left:12px; background:rgba(0,0,0,.55); color:#fff;
     padding:6px 14px; border-radius:12px; font-size:22px; font-weight:bold; }
   #envBadge { position:absolute; top:10px; right:12px; background:rgba(0,0,0,.55); color:#fff;
@@ -382,7 +391,7 @@
     <canvas id="simCanvas"></canvas>
     <div id="dayBadge">Day 0</div><div id="envBadge"></div>
   </div>
-  <button class="bigbtn" id="harvestBtn" style="display:none" onclick="showResults()">🌿 HARVEST!</button>
+  <div id="harvestWrap"><button class="bigbtn" id="harvestBtn" style="display:none" onclick="showResults()">🌿 HARVEST!</button></div>
 </div>
 
 <div class="screen" id="s_results">
@@ -1293,7 +1302,7 @@ async function runSim(){
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
   // a window that is mid-resize (or minimised) can report 0; a 0-high canvas makes drawImage throw
-  const W=Math.max(280, Math.min(window.innerWidth-40, 1240)), H=Math.max(320, Math.min(window.innerHeight*0.72, 820));
+  const W=Math.max(280, Math.min(window.innerWidth-24, 1800)), H=Math.max(320, Math.min(window.innerHeight*0.86, 1060));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
   const PW=W/2, soilY=H*0.34;  // sky holds the scoreboard and both plants; the rest is the root's

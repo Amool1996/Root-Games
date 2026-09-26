@@ -401,91 +401,127 @@ const ENVS = {
     hint:"Almost no phosphorus! It hides in the top soil, close to the surface…"}
 };
 /* ===== polished cartoon weather art (viewBox 0 0 100 100) ===== */
-const WEATHER_ART = {
-Perfect:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="p_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fbdf0"/><stop offset="1" stop-color="#cdeefb"/></linearGradient>
-<radialGradient id="p_sun" cx="0.42" cy="0.4" r="0.65"><stop offset="0" stop-color="#fff6c2"/><stop offset="0.55" stop-color="#ffd63f"/><stop offset="1" stop-color="#ffab33"/></radialGradient>
-<linearGradient id="p_grass" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7ed36a"/><stop offset="1" stop-color="#3f9a45"/></linearGradient>
-<linearGradient id="p_leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a3e884"/><stop offset="1" stop-color="#42a03e"/></linearGradient>
-</defs>
-<rect width="100" height="100" fill="url(#p_sky)"/>
-<g fill="none" stroke-linecap="round" opacity="0.92"><path d="M58 78a27 27 0 0 1 54 0" stroke="#ff7a7a" stroke-width="4.6"/><path d="M62.6 78a22.4 22.4 0 0 1 44.8 0" stroke="#ffb153" stroke-width="4.6"/><path d="M67.2 78a17.8 17.8 0 0 1 35.6 0" stroke="#ffe066" stroke-width="4.6"/><path d="M71.8 78a13.2 13.2 0 0 1 26.4 0" stroke="#69cf72" stroke-width="4.6"/></g>
-<circle cx="27" cy="28" r="20" fill="#ffe680" opacity="0.45"/>
-<g stroke="#ffc93f" stroke-width="3.2" stroke-linecap="round"><line x1="27" y1="2" x2="27" y2="8.5"/><line x1="27" y1="47.5" x2="27" y2="54"/><line x1="1" y1="28" x2="7.5" y2="28"/><line x1="46.5" y1="28" x2="53" y2="28"/><line x1="8.7" y1="9.7" x2="13.3" y2="14.3"/><line x1="45.3" y1="9.7" x2="40.7" y2="14.3"/><line x1="8.7" y1="46.3" x2="13.3" y2="41.7"/><line x1="45.3" y1="46.3" x2="40.7" y2="41.7"/></g>
-<circle cx="27" cy="28" r="14.5" fill="url(#p_sun)"/>
-<circle cx="20.5" cy="31.5" r="2.6" fill="#ff9e7a" opacity="0.65"/><circle cx="33.5" cy="31.5" r="2.6" fill="#ff9e7a" opacity="0.65"/>
-<g fill="#b3781a"><circle cx="22" cy="26.5" r="1.9"/><circle cx="32" cy="26.5" r="1.9"/></g>
-<path d="M22 32.5 Q27 37.5 32 32.5" fill="none" stroke="#b3781a" stroke-width="2.1" stroke-linecap="round"/>
-<g><rect x="65" y="24" width="20" height="9" rx="4.5" fill="#fff"/><ellipse cx="74" cy="24" rx="10.5" ry="8.5" fill="#fff"/><ellipse cx="66" cy="28" rx="8" ry="7" fill="#fff"/><ellipse cx="84" cy="28.5" rx="7.5" ry="6" fill="#eef7fc"/><g stroke="#5bb4e8" stroke-width="3" stroke-linecap="round"><line x1="69" y1="37" x2="67" y2="43"/><line x1="76" y1="37" x2="74" y2="43"/><line x1="83" y1="37" x2="81" y2="43"/></g></g>
-<path d="M0 80 Q50 69 100 80 V100 H0Z" fill="url(#p_grass)"/>
-<path d="M0 80 Q50 69 100 80" fill="none" stroke="#a3e884" stroke-width="2" opacity="0.55"/>
-<ellipse cx="50" cy="98" rx="13" ry="3" fill="#1c5a1f" opacity="0.18"/>
-<path d="M50 98 V79" stroke="#3a8a33" stroke-width="4" stroke-linecap="round"/>
-<path d="M50 83 Q36 82 33 71 Q47 71 50 83Z" fill="url(#p_leaf)"/>
-<path d="M50 80 Q64 78 67 67 Q52 68 50 80Z" fill="url(#p_leaf)"/>
-<path d="M43 79 Q39 75 40 71" fill="none" stroke="#2f7d32" stroke-width="1" opacity="0.5"/></svg>`,
-Drought:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="d_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff9636"/><stop offset="0.55" stop-color="#ffc169"/><stop offset="1" stop-color="#ffe3ad"/></linearGradient>
-<radialGradient id="d_sun" cx="0.45" cy="0.42" r="0.62"><stop offset="0" stop-color="#ffe07a"/><stop offset="0.55" stop-color="#ff9a35"/><stop offset="1" stop-color="#ff6a2a"/></radialGradient>
-<linearGradient id="d_ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dea25c"/><stop offset="1" stop-color="#a2662f"/></linearGradient>
-</defs>
-<rect width="100" height="100" fill="url(#d_sky)"/>
-<circle cx="50" cy="30" r="27" fill="#ffc04d" opacity="0.4"/>
-<g stroke="#ff8a2f" stroke-width="4" stroke-linecap="round"><line x1="50" y1="2" x2="50" y2="8.5"/><line x1="16" y1="30" x2="22.5" y2="30"/><line x1="77.5" y1="30" x2="84" y2="30"/><line x1="26" y1="6" x2="30.5" y2="10.5"/><line x1="74" y1="6" x2="69.5" y2="10.5"/><line x1="26" y1="54" x2="30.5" y2="49.5"/><line x1="74" y1="54" x2="69.5" y2="49.5"/></g>
-<circle cx="50" cy="30" r="19.5" fill="url(#d_sun)"/>
-<g><rect x="37.5" y="25.5" width="10.5" height="8.5" rx="4.2" fill="#242424"/><rect x="52" y="25.5" width="10.5" height="8.5" rx="4.2" fill="#242424"/><path d="M48 29 h4" stroke="#242424" stroke-width="2.2"/><rect x="39.5" y="27.5" width="4.5" height="2.2" rx="1.1" fill="#6f6f6f" opacity="0.8"/><rect x="54" y="27.5" width="4.5" height="2.2" rx="1.1" fill="#6f6f6f" opacity="0.8"/></g>
-<path d="M63 38 Q66.5 43 63 46 A3.4 3.4 0 1 1 63 38Z" fill="#7fd0ff"/>
-<path d="M0 71 Q50 66 100 71 V100 H0Z" fill="url(#d_ground)"/>
-<path d="M0 71 Q50 66 100 71" fill="none" stroke="#eabf82" stroke-width="1.6" opacity="0.6"/>
-<g stroke="#7d4f26" stroke-width="1.8" fill="none" stroke-linecap="round" opacity="0.55"><path d="M22 72 L18 100"/><path d="M23 84 L34 88"/><path d="M52 74 L55 100"/><path d="M80 72 L85 100"/><path d="M55 86 L78 84"/></g>
-<path d="M40 99 Q41 84 49 82 Q61 80 56 68" fill="none" stroke="#8a7938" stroke-width="4" stroke-linecap="round"/>
-<path d="M56 68 Q66 64 68 57 Q58 60 56 68Z" fill="#b6a349"/>
-<path d="M45 84 Q36 84 33 77 Q43 79 45 84Z" fill="#a4923f"/></svg>`,
-LowN:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="n_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c3d8e6"/><stop offset="1" stop-color="#e9f1f5"/></linearGradient>
-<linearGradient id="n_soil" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a58251"/><stop offset="1" stop-color="#78592f"/></linearGradient>
-<radialGradient id="n_plate" cx="0.5" cy="0.4" r="0.7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2e9ee"/></radialGradient>
-<linearGradient id="n_leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2e587"/><stop offset="1" stop-color="#cabf3a"/></linearGradient>
-</defs>
-<rect width="100" height="100" fill="url(#n_sky)"/>
-<path d="M0 64 Q50 60 100 64 V100 H0Z" fill="url(#n_soil)"/>
-<g fill="#5f4525" opacity="0.28"><circle cx="18" cy="80" r="1.4"/><circle cx="30" cy="90" r="1.6"/><circle cx="64" cy="84" r="1.4"/><circle cx="86" cy="92" r="1.6"/><circle cx="74" cy="72" r="1.2"/></g>
-<ellipse cx="75" cy="45" rx="16" ry="4.5" fill="#20344a" opacity="0.12"/>
-<ellipse cx="75" cy="40" rx="15.5" ry="6" fill="url(#n_plate)" stroke="#c2ccd3" stroke-width="1.4"/>
-<ellipse cx="75" cy="39" rx="9.5" ry="3.4" fill="#eef4f8"/>
-<g stroke="#a7b0b7" stroke-width="2.4" stroke-linecap="round"><line x1="58" y1="26" x2="58" y2="42"/><line x1="55.2" y1="26" x2="55.2" y2="33"/><line x1="60.8" y1="26" x2="60.8" y2="33"/></g>
-<ellipse cx="42" cy="98" rx="11" ry="2.6" fill="#3a2b16" opacity="0.2"/>
-<path d="M42 98 V58" stroke="#a9a742" stroke-width="4" stroke-linecap="round"/>
-<path d="M42 66 Q27 66 24 54 Q39 55 42 66Z" fill="url(#n_leaf)"/>
-<path d="M42 61 Q57 59 60 48 Q45 50 42 61Z" fill="url(#n_leaf)"/>
-<g fill="#6a5227"><circle cx="37" cy="76" r="1.9"/><circle cx="47" cy="76" r="1.9"/></g>
-<path d="M37 84 Q42 79 47 84" fill="none" stroke="#6a5227" stroke-width="2.2" stroke-linecap="round"/></svg>`,
-LowP:`<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-<defs>
-<linearGradient id="k_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cdd9e0"/><stop offset="1" stop-color="#eaf1f4"/></linearGradient>
-<linearGradient id="k_ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9c968b"/><stop offset="1" stop-color="#6b665c"/></linearGradient>
-<radialGradient id="k_rock" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#cfc9bd"/><stop offset="1" stop-color="#9c968a"/></radialGradient>
-<radialGradient id="k_rock2" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#c2bcb0"/><stop offset="1" stop-color="#8b857a"/></radialGradient>
-<linearGradient id="k_leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b98fd6"/><stop offset="1" stop-color="#6a3f9c"/></linearGradient>
-</defs>
-<rect width="100" height="100" fill="url(#k_sky)"/>
-<path d="M0 66 Q50 62 100 66 V100 H0Z" fill="url(#k_ground)"/>
-<ellipse cx="20" cy="86" rx="12" ry="4" fill="#3a382f" opacity="0.18"/><ellipse cx="82" cy="90" rx="14" ry="4.5" fill="#3a382f" opacity="0.18"/>
-<ellipse cx="19" cy="82" rx="11" ry="7.5" fill="url(#k_rock)" stroke="#7d786e" stroke-width="1.2"/><ellipse cx="15" cy="79" rx="4" ry="2.5" fill="#e0dbcf" opacity="0.5"/>
-<ellipse cx="82" cy="86" rx="13" ry="8.5" fill="url(#k_rock2)" stroke="#736e64" stroke-width="1.2"/><ellipse cx="77" cy="82" rx="4.5" ry="3" fill="#dcd6ca" opacity="0.5"/>
-<ellipse cx="53" cy="92" rx="10" ry="6" fill="url(#k_rock)" stroke="#7d786e" stroke-width="1.2"/>
-<ellipse cx="34" cy="94" rx="7" ry="4.5" fill="url(#k_rock2)" stroke="#736e64" stroke-width="1.1"/>
-<ellipse cx="50" cy="90" rx="8" ry="2.4" fill="#2d2b24" opacity="0.2"/>
-<path d="M50 90 V60" stroke="#587548" stroke-width="4" stroke-linecap="round"/>
-<path d="M50 68 Q36 67 33 56 Q48 57 50 68Z" fill="url(#k_leaf)"/>
-<path d="M50 63 Q64 62 67 51 Q52 52 50 63Z" fill="url(#k_leaf)"/>
-<path d="M50 60 Q50 53 46 49 Q52 52 50 60Z" fill="url(#k_leaf)"/>
-<g fill="#4a2d6a"><circle cx="45" cy="74" r="1.7"/><circle cx="55" cy="74" r="1.7"/></g>
-<path d="M45 81 Q50 77 55 81" fill="none" stroke="#4a2d6a" stroke-width="2" stroke-linecap="round"/></svg>`
-};
+/* ================= the four fields, drawn as fields =================
+   These used to be little rebuses — a plate and fork for "Hungry Soil", a sun
+   in sunglasses for "Drought". A rebus tells you the NAME of the field. A
+   racing game shows you the TRACK, and that is what a child needs here: the
+   place they are about to grow a root in.
+
+   So each wedge is now a cross-section of its own field — sky, grass, soil to
+   150 cm — and the resource dots are placed by resourcePlan(), the very same
+   function the race screen uses. The picture cannot drift from the simulation,
+   and the child sees the lesson before they choose a single card:
+
+     Drought  — water only in the deep band, topsoil cracked and empty
+     Hungry   — nitrogen washed down out of reach, rain still falling
+     Rocky    — phosphorus stuck in the top centimetres, stones everywhere
+     Perfect  — everything, everywhere
+
+   Drawn on a 100x100 viewBox and clipped to a circle by .wCartoon, so nothing
+   that matters goes outside a radius of about 46 from the centre. */
+const SOIL_TOP = 36, SOIL_BOT = 100, DEEPEST_CM = 150;
+const cmToY = cm => SOIL_TOP + (SOIL_BOT - SOIL_TOP) * Math.min(1, cm / DEEPEST_CM);
+
+/* a fixed pseudo-random so a wedge looks the same every time it is drawn */
+function artRand(seed){ let t = seed + 0x6D2B79F5;
+  return () => { t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                 return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+/* scatter one resource through the depth band resourcePlan gave us, inside the circle */
+function artDots(plan, colour, seed){
+  const r = artRand(seed), n = Math.round(plan.n * 0.24);   // a wedge is small; keep it legible
+  let out = "";
+  for(let i = 0; i < n; i++){
+    const cm = plan.y0 + r() * (Math.min(plan.y1, DEEPEST_CM) - plan.y0);
+    const y  = cmToY(cm);
+    if(y > SOIL_BOT - 2) continue;
+    const x  = 8 + r() * 84;
+    const dx = x - 50, dy = y - 50;
+    if(dx*dx + dy*dy > 44*44) continue;                     // outside the visible circle
+    out += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(3.4 + r()*1.3).toFixed(1)}" fill="${colour}" stroke="rgba(0,0,0,.35)" stroke-width="0.8"/>`;
+  }
+  return out;
+}
+
+function weatherArt(env){
+  const plan = resourcePlan(env);
+  const r = artRand(env.length * 977 + 13);
+
+  /* --- sky: the weather you can see from outside the field --- */
+  const SKY = {
+    Perfect: ["#6fbdf0", "#cdeefb"],
+    Drought: ["#f0a94b", "#ffe2a8"],     // hot, hazy, bleached
+    LowN:    ["#5d7b93", "#aebfcd"],     // overcast — rain is what moves the nitrogen
+    LowP:    ["#79b6e2", "#d4e9f7"]
+  }[env];
+
+  let sky = `<rect width="100" height="${SOIL_TOP}" fill="url(#sky_${env})"/>`;
+  if(env === "Drought"){
+    sky += `<circle cx="50" cy="13" r="12" fill="#fff3c4" opacity=".95"/>`
+         + `<circle cx="50" cy="13" r="17" fill="#ffd45e" opacity=".33"/>`;
+    for(let i=0;i<7;i++){ const a=i*51.4; const x=50+Math.cos(a*Math.PI/180)*21, y=13+Math.sin(a*Math.PI/180)*21;
+      sky += `<line x1="50" y1="13" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#ffcf52" stroke-width="2" stroke-linecap="round" opacity=".75"/>`; }
+  } else if(env === "LowN"){
+    sky += `<ellipse cx="44" cy="12" rx="23" ry="9" fill="#e8eef3"/><ellipse cx="62" cy="15" rx="16" ry="7" fill="#dbe4ec"/>`;
+    for(let i=0;i<11;i++){ const x=14+i*7.2, y=20+(i%3)*4;      // rain: this is what washes N down
+      sky += `<line x1="${x}" y1="${y}" x2="${x-2}" y2="${y+7}" stroke="#9fc3de" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>`; }
+  } else {
+    sky += `<circle cx="22" cy="12" r="8.5" fill="#ffd951"/>`;
+    sky += `<ellipse cx="64" cy="13" rx="17" ry="7" fill="#ffffff" opacity=".9"/><ellipse cx="76" cy="15" rx="11" ry="5" fill="#ffffff" opacity=".8"/>`;
+    if(env === "Perfect") sky += `<path d="M14 36 A36 36 0 0 1 86 36" fill="none" stroke="#ff9d9d" stroke-width="2.4" opacity=".55"/>`
+                               + `<path d="M19 36 A31 31 0 0 1 81 36" fill="none" stroke="#ffd36e" stroke-width="2.4" opacity=".55"/>`
+                               + `<path d="M24 36 A26 26 0 0 1 76 36" fill="none" stroke="#9fe08a" stroke-width="2.4" opacity=".55"/>`;
+  }
+
+  /* --- soil --- */
+  const SOIL = {
+    Perfect: ["#6b4a2c", "#3f2a18"],
+    Drought: ["#d9ab6b", "#9c7746"],     // dry, pale, dusty
+    LowN:    ["#7a5a3a", "#452f1c"],
+    LowP:    ["#9a9086", "#5a5148"]      // stony grey-brown
+  }[env];
+
+  let soil = `<rect y="${SOIL_TOP}" width="100" height="${SOIL_BOT-SOIL_TOP}" fill="url(#soil_${env})"/>`;
+  for(let i=1;i<=3;i++){ const y = SOIL_TOP + (SOIL_BOT-SOIL_TOP)*i/4;
+    soil += `<line x1="0" y1="${y.toFixed(1)}" x2="100" y2="${y.toFixed(1)}" stroke="#000" stroke-width="1" opacity=".13"/>`; }
+
+  /* grass: how well the field is doing tells you as much as the soil does */
+  const GRASS = { Perfect:"#4aa83f", Drought:"#b79a55", LowN:"#a8b45c", LowP:"#5f9a4e" }[env];
+  soil += `<rect y="${SOIL_TOP-2}" width="100" height="4" fill="${GRASS}"/>`;
+  for(let x=3;x<100;x+=6){ const h = env==="Drought" ? 3+r()*3 : 6+r()*4;
+    soil += `<line x1="${x}" y1="${SOIL_TOP-1}" x2="${(x+(r()<.5?-2:2)).toFixed(1)}" y2="${(SOIL_TOP-1-h).toFixed(1)}" stroke="${GRASS}" stroke-width="1.6" stroke-linecap="round"/>`; }
+
+  if(env === "Drought"){                                  // cracked, baked topsoil
+    for(let i=0;i<5;i++){ const x = 12+i*19 + r()*6;
+      soil += `<path d="M${x.toFixed(1)} ${SOIL_TOP} l${(r()*4-2).toFixed(1)} 7 l${(r()*4-2).toFixed(1)} 6" fill="none" stroke="#6d5233" stroke-width="1.7" stroke-linecap="round" opacity=".8"/>`; }
+  }
+  if(env === "LowP"){                                     // stones: why phosphorus cannot move
+    for(let i=0;i<13;i++){ const x=8+r()*84, y=SOIL_TOP+4+r()*(SOIL_BOT-SOIL_TOP-8);
+      const dx=x-50, dy=y-50; if(dx*dx+dy*dy > 43*43) continue;
+      soil += `<ellipse cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" rx="${(3+r()*3).toFixed(1)}" ry="${(2.2+r()*2).toFixed(1)}" fill="#b9b2a6" opacity=".85"/>`; }
+  }
+
+  /* --- the resources, straight from the simulation's own plan --- */
+  const dots = artDots(plan.water, RES.water.c, 11)
+             + artDots(plan.N,     RES.N.c,     29)
+             + artDots(plan.P,     RES.P.c,     47);
+
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">`
+    + `<defs>`
+    + `<linearGradient id="sky_${env}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${SKY[0]}"/><stop offset="1" stop-color="${SKY[1]}"/></linearGradient>`
+    + `<linearGradient id="soil_${env}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${SOIL[0]}"/><stop offset="1" stop-color="${SOIL[1]}"/></linearGradient>`
+    + `</defs>${sky}${soil}${dots}</svg>`;
+}
+
+/* Built on first use, not here: RES and resourcePlan() are declared further down
+   the file, so evaluating these eagerly would hit the temporal dead zone. The
+   wedges are only ever read at runtime, by buildSpinner() and artNested(). */
+const WEATHER_ART = {};
+(function(){ const cache = {};
+  ["Perfect","Drought","LowN","LowP"].forEach(e =>
+    Object.defineProperty(WEATHER_ART, e, { enumerable:true,
+      get(){ return cache[e] || (cache[e] = weatherArt(e)); } }));
+})();
 /* ============ ROOT AVATARS (one per trait card) ============
    Every avatar is a little root character living in soil, drawn so a kid can SEE the trait. */
 function avFace(x,y,s,mood){

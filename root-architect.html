@@ -1180,12 +1180,28 @@ function makeSoil(PW,H,soilY,sc,visD,seed){
     g.fillStyle=`rgba(0,0,0,${(0.05+r()*0.07).toFixed(3)})`; g.fillRect(0,y,PW,4+r()*12); }
   for(let i=0;i<420;i++){ g.fillStyle=r()<.55?"rgba(0,0,0,.22)":"rgba(255,228,185,.13)";  // grain
     g.beginPath(); g.arc(r()*PW, soilY+4+r()*(H-soilY-4), .8+r()*2.4, 0, 7); g.fill(); }
+  /* damp bands: soil is not one flat colour, and the variation is what stops it
+     reading as a brown rectangle behind the roots */
+  for(let i=0;i<7;i++){ const y=soilY+20+r()*(H-soilY-40), h=18+r()*46;
+    const damp=g.createLinearGradient(0,y,0,y+h);
+    damp.addColorStop(0,"rgba(20,10,4,0)"); damp.addColorStop(.5,`rgba(20,10,4,${(0.10+r()*0.10).toFixed(2)})`);
+    damp.addColorStop(1,"rgba(20,10,4,0)");
+    g.fillStyle=damp; g.fillRect(0,y,PW,h); }
   for(let i=0;i<20;i++){ const x=r()*PW, y=soilY+30+r()*(H-soilY-50), w=5+r()*12;      // stones
     g.fillStyle="#5b4029"; g.beginPath(); g.ellipse(x,y,w,w*.65,0,0,7); g.fill();
     g.fillStyle="rgba(255,255,255,.15)"; g.beginPath(); g.ellipse(x-w*.2,y-w*.25,w*.5,w*.28,0,0,7); g.fill(); }
   g.fillStyle="#3f8a2e"; g.fillRect(0,soilY-5,PW,7);                                    // grass
   g.strokeStyle="#3f8a2e"; g.lineWidth=2.2; g.lineCap="round";
   for(let x=4;x<PW;x+=9){ g.beginPath(); g.moveTo(x,soilY-4); g.lineTo(x+(r()<.5?-3:3), soilY-13-r()*8); g.stroke(); }
+  /* light falls from the surface: the deeper you look the darker it gets, and the
+     edges fall away. Without this the soil is evenly lit and reads as a flat fill. */
+  const vig=g.createRadialGradient(PW/2,soilY+(H-soilY)*0.30,PW*0.20, PW/2,soilY+(H-soilY)*0.30,PW*1.05);
+  vig.addColorStop(0,"rgba(0,0,0,0)"); vig.addColorStop(.55,"rgba(0,0,0,.16)"); vig.addColorStop(1,"rgba(0,0,0,.46)");
+  g.fillStyle=vig; g.fillRect(0,soilY,PW,H-soilY);
+  const warm=g.createLinearGradient(0,soilY,0,soilY+90);
+  warm.addColorStop(0,"rgba(255,214,150,.20)"); warm.addColorStop(1,"rgba(255,214,150,0)");
+  g.fillStyle=warm; g.fillRect(0,soilY,PW,90);                                   // sunlight on the topsoil
+
   const step = visD>90 ? 50 : 25;                                                      // ruler
   g.fillStyle="rgba(255,255,255,.55)"; g.font="12px 'Segoe UI',sans-serif"; g.textAlign="left"; g.textBaseline="alphabetic";
   for(let d=step; d<=visD; d+=step){ const y=soilY+d*sc; g.fillRect(6,y,26,1); g.fillText(d+" cm",6,y-4); }
@@ -1397,6 +1413,10 @@ async function runSim(){
     const tt=P.T.getContext("2d"); tt.clearRect(0,0,PW,H);
     tt.globalCompositeOperation="source-over"; tt.drawImage(P.layer,0,0);
     tt.globalCompositeOperation="source-atop"; tt.drawImage(P.C,0,0);     // colour lands on root pixels only
+    /* a soft drop shadow under the whole system: without it the roots look printed
+       onto the soil rather than buried in it */
+    ctx.save(); ctx.shadowColor="rgba(0,0,0,.55)"; ctx.shadowBlur=7; ctx.shadowOffsetY=2;
+    ctx.drawImage(P.T,0,0); ctx.restore();
     ctx.drawImage(P.T,0,0);
     for(let i=P.sparks.length-1;i>=0;i--){ const sp=P.sparks[i], age=(t-sp.t0)/450;
       if(age<0) continue; if(age>=1){ P.sparks.splice(i,1); continue; }
@@ -1461,15 +1481,33 @@ function leftStr(L, short){
   if(L.P)     bits.push(short ? `🟠${L.P}`     : `🟠 ${L.P} phosphorus`);
   return bits.join(short ? "  " : "  ·  ");
 }
+const DOT_ORB = {};                    // one little sprite per resource, drawn once
+function dotOrb(type){
+  if(DOT_ORB[type]) return DOT_ORB[type];
+  const R=11, c=document.createElement("canvas"); c.width=c.height=R*2;
+  const g=c.getContext("2d"), col=RES[type].c;
+  /* a soft halo so it sits IN the soil rather than on top of it */
+  const halo=g.createRadialGradient(R,R,1,R,R,R);
+  halo.addColorStop(0,`${col}`); halo.addColorStop(.42,`${col}`);
+  halo.addColorStop(.62,"rgba(0,0,0,0)"); halo.addColorStop(1,"rgba(0,0,0,0)");
+  g.globalAlpha=.34; g.fillStyle=halo; g.beginPath(); g.arc(R,R,R,0,7); g.fill();
+  /* the body, shaded top-left like everything else in this game */
+  g.globalAlpha=1;
+  const body=g.createRadialGradient(R-1.6,R-2,.5,R,R,5.2);
+  body.addColorStop(0,"#ffffff"); body.addColorStop(.28,col); body.addColorStop(1,col);
+  g.fillStyle=body; g.beginPath(); g.arc(R,R,5,0,7); g.fill();
+  g.strokeStyle="rgba(0,0,0,.35)"; g.lineWidth=1; g.stroke();
+  g.fillStyle="rgba(255,255,255,.85)"; g.beginPath(); g.ellipse(R-1.8,R-2.2,1.5,1,0,0,7); g.fill();
+  return DOT_ORB[type]=c;
+}
 function drawDots(ctx,dots,pulse){
   const p = pulse ? (1+Math.sin(performance.now()/260))/2 : 0;   // leftovers breathe, so they get noticed
   for(const d of dots){ if(d.gone) continue;
-    ctx.beginPath(); ctx.arc(d.x,d.y,4.5,0,7);
-    ctx.fillStyle=RES[d.type].c; ctx.globalAlpha=.9; ctx.fill();
-    ctx.globalAlpha=.35; ctx.lineWidth=3; ctx.strokeStyle=RES[d.type].c; ctx.stroke();
-    if(pulse){ ctx.beginPath(); ctx.arc(d.x,d.y,7+p*7,0,7);
-      ctx.globalAlpha=.55*(1-p); ctx.lineWidth=2.5; ctx.strokeStyle=RES[d.type].c; ctx.stroke(); }
-    ctx.globalAlpha=1;
+    const o=dotOrb(d.type);
+    ctx.drawImage(o, d.x-11, d.y-11);
+    if(pulse){ ctx.beginPath(); ctx.arc(d.x,d.y,8+p*8,0,7);
+      ctx.globalAlpha=.5*(1-p); ctx.lineWidth=2.5; ctx.strokeStyle=RES[d.type].c; ctx.stroke();
+      ctx.globalAlpha=1; }
   }
 }
 

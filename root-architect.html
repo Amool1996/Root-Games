@@ -1095,8 +1095,8 @@ function drawStats(ctx,panels,W,H,day,endDay){
   /* The panel and the two corn plants share the sky. Keep it to the TOP HALF of the
      sky and narrower than the gap between the plants, or it hides the leaves — and the
      leaves are the lesson: purple for low P, yellow for low N, wilting for drought. */
-  const sky=H*0.38;
-  const y0=narrow?44:8, ph=Math.min(178,sky*0.52), pw=narrow?W*0.94:Math.min(560,W*0.37), x0=W/2-pw/2;
+  const sky=H*0.34;
+  const y0=narrow?44:8, ph=Math.min(150,sky*0.52), pw=narrow?W*0.94:Math.min(520,W*0.34), x0=W/2-pw/2;
   const f=(n,b)=>`${b?"bold ":""}${Math.round(ph*n)}px 'Segoe UI',Arial,sans-serif`;
   ctx.save();
   // a deep-blue glass panel with a bright rim and a soft shadow, so it reads against the sky
@@ -1176,7 +1176,7 @@ async function runSim(){
   const W=Math.max(280, Math.min(window.innerWidth-40, 1240)), H=Math.max(320, Math.min(window.innerHeight*0.72, 820));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
-  const PW=W/2, soilY=H*0.38;  // a taller sky: the scoreboard AND both plants have to fit in it
+  const PW=W/2, soilY=H*0.34;  // sky holds the scoreboard and both plants; the rest is the root's
 
   /* two roots grow together on identical soil: the kid's design, and the best design for this
      field, so the difference they see is the root and nothing else */
@@ -1210,7 +1210,7 @@ async function runSim(){
   });
   // one shared ruler for both panels, zoomed so the deeper of the two roots fills its panel
   const visD=Math.min(110, maxD*1.06);
-  const sc=Math.min((PW*0.46)/Math.max(maxHW,10), (H-soilY-36)/visD);
+  const sc=Math.min((PW*0.48)/Math.max(maxHW,10), (H-soilY-10)/visD);
   const px=x=>PW/2+x*sc, py=y=>soilY-y*sc;
 
   const soilImg=makeSoil(PW,H,soilY,sc,visD,curEnv.length*17+3);

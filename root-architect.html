@@ -120,18 +120,17 @@
     transform-origin:50% 100%; transform:translate(-50%,-100%) rotate(0deg);
     transition:transform 4s cubic-bezier(.15,.75,.25,1); z-index:5; pointer-events:none;
     filter:drop-shadow(0 3px 6px rgba(0,0,0,.65)) drop-shadow(0 0 10px rgba(255,226,77,.55)); }
-  .wSlot { position:absolute; width:34%; height:34%; border-radius:50%; z-index:4;
-    transform:translate(-50%,-50%); transition:transform .3s, box-shadow .3s;
-    box-shadow:0 0 0 6px var(--ring,#888), 0 4px 12px rgba(0,0,0,.4); }
-  .wSlot.won { transform:translate(-50%,-50%) scale(1.22); z-index:7;
-    box-shadow:0 0 0 5px #ffe14d, 0 0 24px 4px #ffd23f; }
+  /* the wedge is now just its name, sitting on its colour */
+  .wSlot { position:absolute; z-index:4; transform:translate(-50%,-50%);
+    transition:transform .3s; }
+  .wSlot.won { transform:translate(-50%,-50%) scale(1.16); z-index:7; }
   .wCartoon { width:100%; height:100%; border-radius:50%; overflow:hidden; border:6px solid #fff; background:#fff; }
-  .wName { position:absolute; left:50%; bottom:-11%; transform:translateX(-50%); z-index:6;
-    white-space:nowrap; background:rgba(8,16,34,.86); color:#fff; border:2px solid rgba(255,255,255,.75);
-    border-radius:999px; padding:3px 10px; font-weight:800; font-size:min(1.6vw,15px);
-    box-shadow:0 3px 8px rgba(0,0,0,.45); letter-spacing:.2px; }
+  .wName { position:relative; white-space:nowrap; background:rgba(8,16,34,.9); color:#fff;
+    border:2.5px solid rgba(255,255,255,.85); border-radius:999px;
+    padding:7px 16px; font-weight:800; font-size:min(2.1vw,20px);
+    box-shadow:0 4px 12px rgba(0,0,0,.5); letter-spacing:.2px; }
   .wSlot.won .wName { background:#c98a00; border-color:#ffe14d; color:#fffbe8; }
-  .wSlot.pBot .wName { bottom:auto; top:-13%; }        /* clear of the SPIN button below */
+
   /* a whole living field behind the wheel, drawn like the story scenes */
   #wheelBg { position:absolute; inset:0; z-index:0; pointer-events:none; }
   #wheelBg svg { width:100%; height:100%; display:block; }
@@ -165,13 +164,18 @@
   .bgRoot { stroke-dasharray:520; animation:growCycle 11s ease-in-out infinite; }
   .wCartoon svg { width:100%; height:100%; display:block; }
   /* design screen: the cards on the left, your root taking shape on the right */
+  /* the screen is tall; use it. The row grows to fill what is left under the
+     step chips instead of sitting at the top with empty soil beneath. */
   #designRow { display:flex; gap:min(3vw,28px); align-items:stretch; justify-content:center;
-    flex-wrap:wrap; max-width:1320px; margin:0 auto; }
+    flex-wrap:wrap; max-width:1320px; margin:0 auto; width:100%; flex:1 1 auto;
+    min-height:0; padding-bottom:6px; }
   #designRow #stepPanel { flex:1 1 440px; max-width:640px; }
-  #rootPreviewWrap { flex:0 0 auto; width:min(34vw,370px); text-align:center; }
+  #rootPreviewWrap { flex:0 0 auto; width:min(34vw,370px); text-align:center;
+    display:flex; flex-direction:column; }
+  #rootPreviewWrap #rootPreview { flex:1 1 auto; min-height:0; display:flex; }
   #rootPreview { border-radius:16px; overflow:hidden; box-shadow:0 8px 22px rgba(0,0,0,.45);
     border:4px solid rgba(255,255,255,.85); background:#301f11; }
-  #rootPreview .avSvg { width:100%; height:auto; display:block; }
+  #rootPreview .avSvg { width:100%; height:100%; display:block; object-fit:contain; }
   @keyframes thunk { 0%{transform:scale(1)} 30%{transform:scale(1.07)} 60%{transform:scale(.985)} 100%{transform:scale(1)} }
   #rootPreview.thunk { animation:thunk .42s ease-out; }
   #rootPreviewCap { margin-top:7px; font-weight:800; color:#ffe9a8; text-shadow:1px 1px 2px #333;
@@ -937,9 +941,12 @@ function buildSpinner(){
     /* A prize wheel only creates anticipation if you can see the prizes. Unlabelled
        wedges mean the child spins blind and has nothing to hope for. The short name
        drops the parenthetical — "Hungry Soil", not "Hungry Soil (low nitrogen)". */
+    /* No picture on the wedge. The four fields are already on screen at full
+       size behind the wheel — a 150px copy of each was saying the same thing
+       twice and losing every detail in the process. The wedge carries its
+       colour and its name; the field itself does the showing. */
     const shortName = ENVS[e].name.replace(/\s*\(.*\)/, "");
-    slot.innerHTML=`<div class="wCartoon">${WEATHER_ART[e]}</div>`
-                 + `<div class="wName">${ENVS[e].em} ${shortName}</div>`;
+    slot.innerHTML=`<div class="wName">${ENVS[e].em} ${shortName}</div>`;
     box.appendChild(slot);
   });
   buildWheelBg();
@@ -1286,7 +1293,7 @@ function drawStats(ctx,panels,W,H,day,endDay){
      sky and narrower than the gap between the plants, or it hides the leaves — and the
      leaves are the lesson: purple for low P, yellow for low N, wilting for drought. */
   const sky=H*0.34;
-  const y0=narrow?44:8, ph=Math.min(150,sky*0.52), pw=narrow?W*0.94:Math.min(520,W*0.34), x0=W/2-pw/2;
+  const y0=narrow?44:8, ph=Math.min(178,sky*0.58), pw=narrow?W*0.94:Math.min(560,W*0.36), x0=W/2-pw/2;
   const f=(n,b)=>`${b?"bold ":""}${Math.round(ph*n)}px 'Segoe UI',Arial,sans-serif`;
   ctx.save();
   // a deep-blue glass panel with a bright rim and a soft shadow, so it reads against the sky
@@ -1298,7 +1305,7 @@ function drawStats(ctx,panels,W,H,day,endDay){
   ctx.textAlign="center"; ctx.textBaseline="middle";
   ctx.fillStyle="#fff"; ctx.font=f(0.115,true); ctx.fillText("WHO IS DRINKING MORE?", x0+pw/2, y0+ph*0.095);
   // legend: a gold-rimmed bar is the child, a white-rimmed bar is the champion
-  const me=(playerName||"YOU").toUpperCase().slice(0,12), ly=y0+ph*0.23, ch=ph*0.08;
+  const me=(playerName||"YOU").toUpperCase().slice(0,12), ly=y0+ph*0.20, ch=ph*0.075;
   ctx.font=f(0.095,true);
   const w1=ctx.measureText(me).width, w2=ctx.measureText("CHAMPION").width, gap=ph*0.06;
   let lx=x0+pw/2-(ch*1.6+8+w1+gap*2+ch*1.6+8+w2)/2;
@@ -1322,9 +1329,17 @@ function drawStats(ctx,panels,W,H,day,endDay){
       drawBucket(ctx, bx, base-up, bw, up, fr, RES[ty].c, pi?"#ffffff":"#ffd23f");
       ctx.fillStyle="#fff"; ctx.font=f(0.10,true); ctx.textAlign="center";
       ctx.fillText(Math.round(fr*100)+"%", bx+bw/2, base-up-ph*0.055);
+      /* whose bucket is this? A thin gold-or-white rim is not enough to tell from
+         a queue. Each one wears the name, in the owner's colour. */
+      const who = pi ? "CHAMP" : (playerName||"YOU").toUpperCase().slice(0,7);
+      const tagBg = pi ? "#e9f2fb" : "#ffd23f", tagInk = pi ? "#123055" : "#4a3200";
+      ctx.font=f(0.072,true);
+      const tw2 = ctx.measureText(who).width + ph*0.075, th2 = ph*0.115;
+      ctx.fillStyle=tagBg; roundRect(ctx, bx+bw/2-tw2/2, base+ph*0.035, tw2, th2, th2/2); ctx.fill();
+      ctx.fillStyle=tagInk; ctx.fillText(who, bx+bw/2, base+ph*0.035+th2/2+1);
     });
     /* a fat dot of the resource's own colour, then its name */
-    const ly=y0+ph*0.90, rr=ph*0.055;
+    const ly=y0+ph*0.975, rr=ph*0.050;
     ctx.beginPath(); ctx.arc(gx-colW*0.20, ly-rr*0.35, rr, 0, 7);
     ctx.fillStyle=RES[ty].c; ctx.fill();
     ctx.strokeStyle="rgba(255,255,255,.8)"; ctx.lineWidth=2; ctx.stroke();

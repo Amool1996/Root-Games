@@ -138,16 +138,37 @@ Raw cluster outputs (per-day `.vtp`/`.rsml`, several GB) are **not** in this rep
 
 ## 🎵 Music & sound
 
-Every screen has its own music, synthesized in the browser (no files, works offline): bouncy on the
-title, a soft music box under Rooty's Story, carnival oom-pah on the field wheel with ticks and a
-fanfare on the spin, rising arpeggios while the roots grow (each drink pops), and a celebration on
-the score and leaderboard. Music ducks under the narration. The speaker button (top right) mutes
+Every screen has its own music, synthesized in the browser (no files, works offline) — and its own
+**instrument**, so where you are is audible and not just how fast the tune goes: a warm marimba on
+the title, a music box under Rooty's Story, a near-silent pad while a child types their name, a
+filtered carnival reed on the field wheel (with ticks and a fanfare on the spin), music-box
+arpeggios during the race, a resolved pad on the score, and a marimba celebration on the
+leaderboard. Music ducks under the narration.
+
+Two things keep it from becoming booth noise. **The race music follows the root**: `Music.intensity()`
+is fed the growth progress, so the filter opens and a counter-line joins as the soil fills — day 40
+is the fullest the music ever gets. And **screens a child may sit on for minutes calm themselves** —
+the title after 45 s, the leaderboard after 20 s — thinning out rather than nagging a queue.
+
+The whole mix runs through a limiter, and through a shelf (−7 dB above 1.8 kHz) and a hard 3 kHz
+lowpass that every sound passes, effects included. Measured over a 4-second render, the share of
+energy above 3 kHz on the title screen is 0.1%; before this chain existed it was 41%, nearly all of
+it hi-hats. If you add a sound and it seems shrill, it is almost certainly bypassing that chain. The speaker button (top right) mutes
 everything and remembers it. Browsers only allow sound after the first tap, so it starts with the
 first touch. To use real tracks, see [`ra-data/music/README.txt`](ra-data/music/README.txt).
 
 ## 🔊 Voice
 
-Rooty's Story narrates itself with a female voice built into Windows (Zira). For a real human
+Rooty's Story is narrated by the **mp3 files in `ra-data/voice/`** (p01–p15), so it sounds the same
+on every machine and no longer depends on whichever voice the computer happens to have. Regenerate
+them from a voice installed on a Mac with `node cluster/make_voice.js "<voice name>"` — the script
+reads the script out of `root-architect.html` itself, so the audio can never drift from the captions.
+
+Write all 15, never a subset: the game sets `voiceFiles=false` the first time a file is missing and
+every page after it falls back to the built-in voice.
+
+If the files are deleted the game still works, narrating with a voice built into the computer
+(Windows: Zira). For a real human
 voice, record the pages as MP3s into `ra-data/voice/` — see
 [`ra-data/voice/README.txt`](ra-data/voice/README.txt) for the script and file names. The eight
 pages the short cut uses are listed there; record those and the booth version is covered.

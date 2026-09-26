@@ -5,3 +5,6 @@
 .claude/
 Thumbs.db
 .DS_Store
+
+# voice files the installer replaced, kept locally so a bad take can be undone
+ra-data/voice/_replaced/

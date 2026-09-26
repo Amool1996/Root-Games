@@ -43,7 +43,9 @@ Search (Ctrl+F) for the text in the **Search for** column.
 | Switch the shared (booth + phones) leaderboard on | `const FIREBASE_DB_URL =` | Paste the Firebase database address between the quotes — see README "Shared leaderboard". Empty = this device only. |
 | The "Play on your phone" QR card (words) | `class="qrCard"` | The same card appears three times (start, Saved, leaderboard). |
 | The address the QR code points to | *don't edit `ra-data/qr.svg` by hand* | Run `python cluster/make_qr.py` after changing the `URL` line in it (needs `python -m pip install qrcode` once). |
-| The music (tempo, notes, volume of each screen's loop) | `const P={` | One block per screen: `bpm`, `vol`, `mel` (melody) and `bass` as MIDI note numbers (72 = middle C's C5). `_` is a rest. |
+| The music of one screen | `const P={` | One block per screen. `bpm` tempo · `voice` which instrument (`marimba`, `musicbox`, `reed`, `pad`) · `cut` how bright in Hz (lower = warmer) · `vol`/`bvol` tune and bass loudness · `wet` how much room · `groove` the percussion (`kick`, `oompah`, `shaker`, `pulse`, `none`) · `calm` seconds before the loop thins itself out (0 = never) · `lead`/`bass` the notes, as MIDI numbers over 64 sixteenth-steps (60 = middle C). `_` is a rest. |
+| How bright the whole game is allowed to be | `tilt` and `ceiling` | A shelf (−7 dB above 1.8 kHz) and a hard lowpass at 3 kHz that **every** sound passes through, effects included. Raise these and things start to get shrill — they are the reason nothing in the game can pierce. |
+| How loud anything can get | `limiter` | A compressor on the output. Leave it in: without it a busy beat clips, which is what makes cheap game audio tiring. |
 | Replace the built-in music with real MP3s | *no code edit* | Put files in `ra-data/music/` and list them in `manifest.js` there — see `ra-data/music/README.txt`. |
 
 If a change breaks the page (blank screen or a button that does nothing), you almost certainly
@@ -90,7 +92,10 @@ Needs Python 3 (any recent version; nothing to install beyond Python itself).
 
 ## 4. Record a real voice
 
-The story narrates itself with the Windows voice "Zira". A real human voice is much better for
+The story is narrated by the mp3 files in `ra-data/voice/` (p01–p15). Replace any of them with a
+recording and it is used instead — but replace **all fifteen or none**, because the game stops
+looking for recordings the first time one is missing. `voice-booth.html` in this folder is a
+teleprompter that records and names them for you. A real human voice is much better for
 small children. Record each page on a phone, save as `p01.mp3`, `p02.mp3` … in
 `ra-data/voice/`, and the game uses them automatically. The full script, the file names, and the
 eight pages the short cut needs are in **`ra-data/voice/README.txt`**.

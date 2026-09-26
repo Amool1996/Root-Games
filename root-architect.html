@@ -165,13 +165,15 @@
   .bgRoot { stroke-dasharray:520; animation:growCycle 11s ease-in-out infinite; }
   .wCartoon svg { width:100%; height:100%; display:block; }
   /* design screen: the cards on the left, your root taking shape on the right */
-  #designRow { display:flex; gap:min(3vw,28px); align-items:flex-start; justify-content:center;
-    flex-wrap:wrap; max-width:1180px; margin:0 auto; }
+  #designRow { display:flex; gap:min(3vw,28px); align-items:stretch; justify-content:center;
+    flex-wrap:wrap; max-width:1320px; margin:0 auto; }
   #designRow #stepPanel { flex:1 1 440px; max-width:640px; }
-  #rootPreviewWrap { flex:0 0 auto; width:min(30vw,310px); text-align:center; }
+  #rootPreviewWrap { flex:0 0 auto; width:min(34vw,370px); text-align:center; }
   #rootPreview { border-radius:16px; overflow:hidden; box-shadow:0 8px 22px rgba(0,0,0,.45);
     border:4px solid rgba(255,255,255,.85); background:#301f11; }
   #rootPreview .avSvg { width:100%; height:auto; display:block; }
+  @keyframes thunk { 0%{transform:scale(1)} 30%{transform:scale(1.07)} 60%{transform:scale(.985)} 100%{transform:scale(1)} }
+  #rootPreview.thunk { animation:thunk .42s ease-out; }
   #rootPreviewCap { margin-top:7px; font-weight:800; color:#ffe9a8; text-shadow:1px 1px 2px #333;
     font-size:min(2.4vw,16px); }
   @media (max-width:820px){ #rootPreviewWrap { width:min(52vw,230px); } }
@@ -1020,14 +1022,23 @@ function rootAvatar(p){
             fill="none" stroke="${ink("depth")}" stroke-width="${wMain}" stroke-linecap="round"
             opacity="${inkOp("depth")}"/>`;
 
-    /* laterals branch off each axis */
+    /* Laterals branch off each axis. The axis is a quadratic Bezier, so the branch
+       point has to be evaluated ON that curve — placing it along the straight line
+       from the crown leaves side roots floating loose in the soil. */
     for(let j = 1; j <= nLat; j++){
-      const f  = j/(nLat+1);
-      const bx = cx + (mx-cx)*2*f*(1-f)*1.6 + Math.sin(ang)*len*f;
-      const by = GY + Math.cos(ang)*len*f;
+      const f = j/(nLat+1), u = 1-f;
+      const bx = u*u*cx + 2*u*f*mx + f*f*ex;          // B(f)
+      const by = u*u*GY + 2*u*f*my + f*f*ey;
+      const tx = 2*u*(mx-cx) + 2*f*(ex-mx);           // B'(f), the direction of growth
+      const ty = 2*u*(my-GY) + 2*f*(ey-my);
+      const tl = Math.hypot(tx,ty) || 1;
+      const nx = -ty/tl, ny = tx/tl;                  // normal: a lateral leaves sideways
       const dir = (j % 2 ? 1 : -1);
-      const ll  = (shallow ? 34 : 24) * (1 - f*0.4);
-      g += `<path d="M${bx.toFixed(1)} ${by.toFixed(1)} q${(dir*ll*0.6).toFixed(1)} ${(ll*0.35).toFixed(1)} ${(dir*ll).toFixed(1)} ${(ll*0.9).toFixed(1)}"
+      const ll  = (shallow ? 34 : 24) * (1 - f*0.35);
+      /* out along the normal, then bending down under gravity */
+      const c1x = bx + dir*nx*ll*0.55,      c1y = by + dir*ny*ll*0.55 + ll*0.18;
+      const ex2 = bx + dir*nx*ll*0.85 + 2,  ey2 = by + dir*ny*ll*0.85 + ll*0.62;
+      g += `<path d="M${bx.toFixed(1)} ${by.toFixed(1)} Q${c1x.toFixed(1)} ${c1y.toFixed(1)} ${ex2.toFixed(1)} ${ey2.toFixed(1)}"
               fill="none" stroke="${ink("bush")}" stroke-width="${wLat}" stroke-linecap="round"
               opacity="${inkOp("bush")}"/>`;
     }
@@ -1035,7 +1046,8 @@ function rootAvatar(p){
     /* root hairs: only when the Fuzzy card has been chosen */
     if(fuzzy){
       for(let k = 1; k <= 14; k++){
-        const f = k/15, hx = cx + Math.sin(ang)*len*f, hy = GY + Math.cos(ang)*len*f;
+        const f = k/15, u = 1-f;                       // on the curve, not beside it
+        const hx = u*u*cx + 2*u*f*mx + f*f*ex, hy = u*u*GY + 2*u*f*my + f*f*ey;
         const d = (k % 2 ? 1 : -1) * (4 + rnd()*3);
         g += `<line x1="${hx.toFixed(1)}" y1="${hy.toFixed(1)}" x2="${(hx+d).toFixed(1)}" y2="${(hy+2).toFixed(1)}"
                 stroke="#f6ecd6" stroke-width="1" stroke-linecap="round" opacity="${alpha*0.85}"/>`;
@@ -1062,6 +1074,25 @@ function rootAvatar(p){
 
 function buildCards(){ renderStairs(); renderStep(); drawAvatar(); }
 function drawAvatar(){ const h=document.getElementById('rootPreview'); if(h) h.innerHTML=rootAvatar(picks); }
+/* send the chosen card across the screen and into the root, and change the root
+   at the moment it arrives */
+function flyToRoot(btn){
+  const host=document.getElementById("rootPreview");
+  if(!host || !btn || !btn.getBoundingClientRect){ drawAvatar(); return; }
+  const a=btn.getBoundingClientRect(), t=host.getBoundingClientRect();
+  if(!a.width || !t.width){ drawAvatar(); return; }
+  const ghost=btn.cloneNode(true);
+  ghost.style.cssText=`position:fixed;left:${a.left}px;top:${a.top}px;width:${a.width}px;`
+    +`height:${a.height}px;margin:0;z-index:60;pointer-events:none;`
+    +`transition:transform .46s cubic-bezier(.45,.05,.3,1), opacity .46s ease-in;`;
+  document.body.appendChild(ghost);
+  const dx=(t.left+t.width/2)-(a.left+a.width/2), dy=(t.top+t.height*0.42)-(a.top+a.height/2);
+  requestAnimationFrame(()=>{
+    ghost.style.transform=`translate(${dx}px,${dy}px) scale(.16) rotate(-10deg)`;
+    ghost.style.opacity=".2"; });
+  setTimeout(()=>{ ghost.remove(); drawAvatar(); Music.sfx("chime");
+    host.classList.remove("thunk"); void host.offsetWidth; host.classList.add("thunk"); }, 460);
+}
 function renderStairs(){
   const s=document.getElementById("stairs"); s.innerHTML="";
   CARDS.forEach((c,i)=>{
@@ -1079,9 +1110,10 @@ function renderStep(){
   const all=CARDS.every(c=>picks[c.key]);
   run.disabled=!all; run.classList.toggle("pulse",all);
   if(all && stepIdx>=CARDS.length){
-    p.innerHTML=`<div class="stepHead">All 6 steps done, ${playerName||"friend"}! 🎉 This is your root:</div>
-      <div class="pickedRow">${CARDS.map(c=>ROOT_ART[picks[c.key]]).join("")}</div>
-      <div class="sub" style="font-size:min(3.4vw,20px)">Press RUN — or tap a step to change it.</div>`;
+    /* The six picks are already on the step chips above AND in the live root
+       beside this panel. A third copy plus two lines of instructions was noise. */
+    p.innerHTML=`<div class="stepHead">Ready, ${playerName||"friend"}! 🎉</div>
+      <div class="sub" style="font-size:min(3.4vw,20px)">Tap a step to change it.</div>`;
     setTimeout(()=>{ try{ run.scrollIntoView({behavior:"smooth",block:"end"}); }catch(e){} },80);   // short screens: bring RUN into view
     return;
   }
@@ -1091,10 +1123,16 @@ function renderStep(){
   [c.a,c.b].forEach(o=>{
     const b=document.createElement("button"); b.className="card"+(picks[c.key]===o.code?" sel":""); b.id="card_"+o.code;
     b.innerHTML=`<span class="av">${ROOT_ART[o.code]||""}</span><b>${o.label}</b><br><small>${CARDINFO[o.code]}</small>`;
-    b.onclick=()=>{ Music.sfx("click"); picks[c.key]=o.code; setTimeout(drawAvatar,0);
+    b.onclick=()=>{ Music.sfx("click"); picks[c.key]=o.code;
+      /* The card flies onto the root and the root changes when it lands. Tapping a
+         card and watching a number change elsewhere feels like answering a quiz;
+         watching the piece travel and stick feels like building something. Drag
+         would say the same thing, but small hands at a kiosk fail at drag and
+         succeed at tap, and a failed drag is a stuck child holding up a queue. */
+      flyToRoot(b);
       document.querySelectorAll("#stepOpts .card").forEach(x=>x.classList.toggle("sel",x.id==="card_"+o.code));
       setTimeout(()=>{ const next=CARDS.findIndex(cc=>!picks[cc.key]);       // climb to the next empty step
-        stepIdx = next>=0 ? next : CARDS.length; renderStairs(); renderStep(); }, 380);
+        stepIdx = next>=0 ? next : CARDS.length; renderStairs(); renderStep(); }, 520);
     };
     opts.appendChild(b);
   });

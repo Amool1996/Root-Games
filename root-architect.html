@@ -366,6 +366,7 @@
 
 <div class="screen" id="s_board">
   <h2>🏆 Today's Champion Root Systems</h2>
+  <div class="sub" id="boardLive" style="font-size:min(3.4vw,18px)"></div>
   <table class="lb" id="lbTable"></table>
   <div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone!</b>Scan me with your camera —<br>the same game, anywhere.<small>Design your root on the way home.</small></div></div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
@@ -677,7 +678,8 @@ function renderTitleBoard(){
   const lb=readLB();
   el.innerHTML = "<h3>🏆 Today's best root systems</h3>" + (lb.length
     ? lb.slice(0,5).map((r,i)=>`<div class="row"><span>${["🥇","🥈","🥉","4.","5."][i]} <b>${r.n}</b></span><span>${r.s}${r.s===100?" 🏆":""} ${ENVS[r.e].em}</span></div>`).join("")
-    : `<div class="row"><span>No one yet — be the first!</span></div>`);
+    : `<div class="row"><span>No one yet — be the first!</span></div>`)
+    + (sharedOK ? `<div class="row" style="font-size:.8em;opacity:.8"><span>🌐 booth and phones together</span></div>` : "");
 }
 let letters = [0,0,0]; const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -1508,25 +1510,63 @@ function buildNameEntry(){
   }
 }
 function bump(i,d){ letters[i]=(letters[i]+d+26)%26; document.getElementById("L"+i).textContent=ABC[letters[i]]; }
-function lbKey(){ const d=new Date(); return "ra_lb_"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
-function readLB(){ try{ return JSON.parse(localStorage.getItem(lbKey())||"[]"); }catch(e){ return []; } }
+/* ---- the shared leaderboard (Firebase Realtime Database, owned by the lab) ----
+   Every score is kept on this device (localStorage) AND, when there is internet, written to the lab's
+   Firebase database under scores/<today>. The booth laptop and every phone that scanned the QR code
+   write to and read from the same place, so all of today's scores land on one board. It talks to
+   Firebase over its plain web address (no library to load), so it works from a file on the laptop
+   and from GitHub Pages alike. Offline, the game simply shows the local board.
+   Setup: see README "Shared leaderboard". Leave FIREBASE_DB_URL empty to run this device only. */
+const FIREBASE_DB_URL = "";   // e.g. "https://root-race-default-rtdb.firebaseio.com"
+let sharedLB=[], sharedOK=false, sharedTimer=null;
+const dayKey=()=>{ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); };
+function lbKey(){ return "ra_lb_"+dayKey(); }
+function localLB(){ try{ return JSON.parse(localStorage.getItem(lbKey())||"[]"); }catch(e){ return []; } }
+function readLB(){                                   // local + shared, one entry per score, best first
+  const seen={}, out=[];
+  localLB().concat(sharedLB).forEach(r=>{ const k=r.id||(r.n+"|"+r.s+"|"+r.e+"|"+r.g); if(seen[k]) return; seen[k]=1; out.push(r); });
+  out.sort((a,b)=>b.s-a.s||b.g-a.g);
+  return out;
+}
+function sharedPath(){ return FIREBASE_DB_URL.replace(/\/+$/,"")+"/scores/"+dayKey()+".json"; }
+function fetchShared(then){                          // ask the database for today's scores, then redraw
+  if(!FIREBASE_DB_URL) return;
+  fetch(sharedPath(),{cache:"no-store"}).then(r=>r.json()).then(obj=>{
+    const got=[];
+    if(obj) Object.keys(obj).forEach(k=>{ const r=obj[k];
+      if(r && typeof r.s==="number" && ENVS[r.e]) got.push({n:String(r.n||"?").slice(0,14), s:Math.round(r.s), e:r.e, g:+r.g||0, id:r.id||k}); });
+    sharedLB=got; sharedOK=true; if(then) then();
+  }).catch(()=>{ sharedOK=false; });
+}
+function postShared(rec){                            // a failure just means "this device only"
+  if(!FIREBASE_DB_URL) return;
+  try{ fetch(sharedPath(),{method:"POST", body:JSON.stringify(rec)}).then(()=>fetchShared(renderTitleBoard)).catch(()=>{}); }catch(e){}
+}
+function watchShared(on){                            // while the start or board screen is up, refresh every 8 s
+  clearInterval(sharedTimer); sharedTimer=null;
+  if(on && FIREBASE_DB_URL) sharedTimer=setInterval(()=>fetchShared(()=>{ renderTitleBoard(); renderBoardTable(); }),8000);
+}
 function saveScore(){
   if(!lastResult) return go("title");
   const name=playerName || letters.map(l=>ABC[l]).join("");
-  const lb=readLB(); lb.push({n:name, s:lastResult.score, e:lastResult.env, g:lastResult.g});
+  const rec={n:name, s:lastResult.score, e:lastResult.env, g:+lastResult.g.toFixed(2), d:dayKey(), t:Date.now(),
+             id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)};
+  const lb=localLB(); lb.push(rec);
   lb.sort((a,b)=>b.s-a.s||b.g-a.g);
   try{ localStorage.setItem(lbKey(), JSON.stringify(lb.slice(0,20))); }catch(e){}
+  postShared(rec);
   Music.sfx("chime");
   document.getElementById("afterLine").innerHTML=`<b>${name}</b>, your <b>${lastResult.score} points</b> are on today's board!`;
   go("after");
 }
-function showBoard(){
+function showBoard(){ renderBoardTable(); go("board"); fetchShared(renderBoardTable); }
+function renderBoardTable(){
   const lb=readLB();
   const t=document.getElementById("lbTable");
   t.innerHTML="<tr><th></th><th>Name</th><th>Score</th><th>Field</th></tr>"+
     (lb.length? lb.slice(0,10).map((r,i)=>`<tr><td>${i===0?"🥇":i===1?"🥈":i===2?"🥉":(i+1)}</td><td><b>${r.n}</b></td><td>${r.s}${r.s===100?" 🏆":""}</td><td>${ENVS[r.e].em}</td></tr>`).join("")
      : "<tr><td colspan=4>No champions yet today — be the first!</td></tr>");
-  go("board");
+  document.getElementById("boardLive").textContent = sharedOK ? "🌐 live — booth and phones together" : (FIREBASE_DB_URL ? "this screen only (no internet right now)" : "");
 }
 
 /* ================= intro story (animated explainer) ================= */
@@ -2180,13 +2220,16 @@ go=function(id){ _origGo(id); Music.play(SCENE_MUSIC[id]||"title");
     document.getElementById("designTitle").innerHTML=`${E.em} ${playerName||"Friend"}, build your root for the ${E.name}!`;
     document.getElementById("hintLine").textContent=E.hint; }
   if(id==="name") buildNameEntry();
-  if(id==="title") renderTitleBoard();
+  if(id==="title"){ renderTitleBoard(); fetchShared(renderTitleBoard); }
+  watchShared(id==="title"||id==="board");
   if(id==="who"){ const i=document.getElementById("whoInput"); i.value=""; setTimeout(()=>{ try{ i.focus(); }catch(e){} },80); }
   if(id==="sim") document.getElementById("harvestBtn").classList.remove("pulse");
   else cancelAnimationFrame(animId);                       // leaving the race stops its loop
 };
 document.getElementById("whoInput").addEventListener("keydown", e=>{ if(e.key==="Enter") setPlayer(); });
-renderTitleBoard();
+renderTitleBoard(); fetchShared(renderTitleBoard); watchShared(true);
+// the QR card's small line depends on whether the shared board is switched on
+document.querySelectorAll(".qrCard small").forEach(s=>{ s.textContent = FIREBASE_DB_URL ? "Your phone score shows up on this board too!" : "Design your root on the way home."; });
 </script>
 </body>
 </html>

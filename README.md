@@ -28,7 +28,28 @@ The game is also published at **https://amool1996.github.io/Root-Games/root-arch
 (GitHub Pages; `.github/workflows/pages.yml` republishes the game files on every push to `main`).
 The start, Saved and leaderboard screens show a **QR code** for that address, so a visitor can
 scan it and play the same game on their phone. The QR card hides itself on narrow screens.
-The phone's scores go on that phone's own board; the booth laptop keeps its own board.
+With the shared leaderboard switched on (next section) phone scores appear on the booth screen too.
+
+## 🌐 Shared leaderboard (booth + phones on one board)
+
+Scores are always kept on the device. When `FIREBASE_DB_URL` in `root-architect.html` is set, every
+score is also written to a Firebase Realtime Database under `scores/<today>` and every device shows
+the merged board (refreshed every 8 s on the start and leaderboard screens). Offline, the device
+board still works. Setup, once, about ten minutes:
+
+1. https://console.firebase.google.com → **Create a project** (any name, e.g. `root-race`; Analytics off).
+2. In the project: **Build → Realtime Database → Create database** → pick a location → start in
+   **locked mode**.
+3. **Rules** tab: replace everything with the contents of [`cluster/firebase-rules.json`](cluster/firebase-rules.json)
+   and **Publish**. (Anyone may read today's board and add a score of 0–100 with a name of up to 14
+   letters; nothing can be changed or deleted from the game.)
+4. **Data** tab: copy the database address shown at the top, e.g.
+   `https://root-race-default-rtdb.firebaseio.com`.
+5. In `root-architect.html` find `const FIREBASE_DB_URL = "";` and paste the address between the
+   quotes. Save, commit, push (the phones get it from GitHub Pages; the booth laptop uses the file).
+
+To start a fresh board for another event nothing is needed: the board is per day. To wipe a day,
+delete its `scores/<date>` node in the Data tab.
 
 ## 🎮 Amazing Roots! (3 games)
 

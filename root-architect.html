@@ -1517,7 +1517,7 @@ function bump(i,d){ letters[i]=(letters[i]+d+26)%26; document.getElementById("L"
    Firebase over its plain web address (no library to load), so it works from a file on the laptop
    and from GitHub Pages alike. Offline, the game simply shows the local board.
    Setup: see README "Shared leaderboard". Leave FIREBASE_DB_URL empty to run this device only. */
-const FIREBASE_DB_URL = "";   // e.g. "https://root-race-default-rtdb.firebaseio.com"
+const FIREBASE_DB_URL = "https://root-race-default-rtdb.firebaseio.com";   // the lab's Firebase database (empty = this device only)
 let sharedLB=[], sharedOK=false, sharedTimer=null;
 const dayKey=()=>{ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); };
 function lbKey(){ return "ra_lb_"+dayKey(); }

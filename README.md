@@ -22,6 +22,14 @@ are not programmers and says exactly where each piece lives.
 3. **Amazing Roots!:** double-click `amazing-roots-games.html`, press **F11**.
 4. Works with mouse, keyboard and touchscreens. Leaderboards persist per day in `localStorage`.
 
+## 📱 On a phone
+
+The game is also published at **https://amool1996.github.io/Root-Games/root-architect.html**
+(GitHub Pages; `.github/workflows/pages.yml` republishes the game files on every push to `main`).
+The start, Saved and leaderboard screens show a **QR code** for that address, so a visitor can
+scan it and play the same game on their phone. The QR card hides itself on narrow screens.
+The phone's scores go on that phone's own board; the booth laptop keeps its own board.
+
 ## 🎮 Amazing Roots! (3 games)
 
 | Game | What kids learn |

@@ -226,6 +226,13 @@
      translateX on the button itself loses that fight — btnPulse animates transform. */
   #harvestWrap { position:absolute; left:0; right:0; bottom:2.5%; text-align:center; z-index:6; pointer-events:none; }
   #harvestWrap #harvestBtn { pointer-events:auto; box-shadow:0 8px 26px rgba(0,0,0,.55); }
+  /* On a phone, window.innerHeight includes the space the URL bar occupies, so a
+     canvas sized from it is taller than what you can actually see and a button
+     pinned to its bottom falls off the screen. On narrow screens the button goes
+     back into normal flow, under the canvas, where it cannot escape. */
+  @media (max-width:760px){
+    #harvestWrap { position:static; margin-top:10px; }
+  }
   #dayBadge { position:absolute; top:60px; left:12px; background:rgba(0,0,0,.55); color:#fff;
     padding:6px 14px; border-radius:12px; font-size:22px; font-weight:bold; }
   #envBadge { position:absolute; top:60px; right:12px; background:rgba(0,0,0,.55); color:#fff;
@@ -279,7 +286,11 @@
   @media (max-width:760px) {
     .screen, #s_intro, #s_wheel, #s_design { padding-top:72px; }
     #s_title { padding-top:0; }
-    #dayBadge, #envBadge { font-size:14px; padding:4px 9px; }
+    /* the booth canvas runs under the Menu and speaker buttons so the badges sit
+       at 60px; a phone canvas starts below them, where 60px collides with the
+       scoreboard instead. Put them back at the top, and keep the field name short. */
+    #dayBadge, #envBadge { font-size:13px; padding:4px 9px; top:8px; }
+    #envBadge { max-width:52vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   }
 </style>
 </head>
@@ -356,10 +367,9 @@
   <h2>Saved! 🎉</h2>
   <div class="sub" id="afterLine"></div>
   <div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone</b><small>Design your root on the way home.</small></div></div>
-  <div class="sub">Want to know how real scientists design roots?<br>Watch Rooty's <b>full story</b> — 3 minutes.</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
-    <button class="bigbtn" onclick="showIntro(true)">📺 Yes, show me!</button>
-    <button class="bigbtn" style="background:linear-gradient(#8a97a8,#5b6a7c);box-shadow:0 6px 0 #3c4b59" onclick="go('title')">🏠 No thanks — back to start</button>
+    <button class="bigbtn" onclick="showBoard()">🏆 See the board</button>
+    <button class="bigbtn" style="background:linear-gradient(#8a97a8,#5b6a7c);box-shadow:0 6px 0 #3c4b59" onclick="go('title')">🏠 Back to start</button>
   </div>
 </div>
 
@@ -426,7 +436,7 @@
   <div class="qrCard"><img src="ra-data/qr.svg" alt="QR code"><div><b>📱 Play on your phone</b><small>Design your root on the way home.</small></div></div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
     <button class="bigbtn" onclick="go('title')">🏠 Back to start</button>
-    <button class="bigbtn" style="background:linear-gradient(#5b9fd4,#31699a);box-shadow:0 6px 0 #23507a" onclick="showIntro(true)">📺 Learn more: the full story (3 min)</button>
+
   </div>
 </div>
 
@@ -1385,7 +1395,13 @@ async function runSim(){
   document.getElementById("harvestBtn").style.display="none";
   const cv=document.getElementById("simCanvas");
   // a window that is mid-resize (or minimised) can report 0; a 0-high canvas makes drawImage throw
-  const W=Math.max(280, Math.min(window.innerWidth-24, 1800)), H=Math.max(320, Math.min(window.innerHeight*0.95, 1180));
+  /* visualViewport is what the person can actually SEE; innerHeight on a phone
+     includes the browser chrome, which is how the HARVEST button ended up off
+     the bottom. Phones also give the button its own row, so the canvas takes less. */
+  const vpH = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+  const phone = window.innerWidth < 760;
+  const W=Math.max(280, Math.min(window.innerWidth-24, 1800));
+  const H=Math.max(320, Math.min(vpH*(phone?0.70:0.95), 1180));
   cv.width=W; cv.height=H;
   const ctx=cv.getContext("2d"); ctx.lineJoin="round";
   const PW=W/2, soilY=H*0.34;  // sky holds the scoreboard and both plants; the rest is the root's

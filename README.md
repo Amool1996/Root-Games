@@ -30,6 +30,8 @@ The start, Saved and leaderboard screens show a **QR code** for that address, so
 scan it and play the same game on their phone. The QR card hides itself on narrow screens.
 With the shared leaderboard switched on (next section) phone scores appear on the booth screen too.
 
+**`Root-Race-QR-poster.pdf`** is an A4 poster of the QR code for the booth table (regenerate with `python cluster/make_poster.py`).
+
 ## 🌐 Shared leaderboard (booth + phones on one board)
 
 Scores are always kept on the device. When `FIREBASE_DB_URL` in `root-architect.html` is set, every

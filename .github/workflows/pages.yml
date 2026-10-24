@@ -28,6 +28,7 @@ jobs:
           mkdir site
           cp index.html root-architect.html amazing-roots-games.html site/
           cp -r ra-data site/
+          cp -r cast2026 site/   # CAST 2026 poster: root-growth videos opened by the poster's QR code
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
